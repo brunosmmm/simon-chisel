@@ -131,3 +131,7 @@ class SimonRound(maxWordWidth: Int) extends Module {
   }
 
 }
+
+object SimonRoundDriver extends App {
+  chisel3.Driver.execute(args, () => new SimonRound(64))
+}
