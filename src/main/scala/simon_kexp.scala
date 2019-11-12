@@ -56,7 +56,7 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   val kexpState = RegInit(kexpIdle)
 
   // pending round key expansion
-  val kexpPending = Reg(UInt(16.W))
+  val kexpPending = RegInit(0.U(16.W))
 
   // mode
   val kexpMode = Reg(Bool())
