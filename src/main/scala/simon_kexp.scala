@@ -128,6 +128,3 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   }
 }
 
-object SimonKexpDriver extends App {
-  chisel3.Driver.execute(args, () => new SimonKeyExpander(68, 64, 128))
-}
