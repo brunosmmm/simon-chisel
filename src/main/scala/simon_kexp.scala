@@ -59,7 +59,7 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   val kexpPending = RegInit(0.U(16.W))
 
   // mode
-  val kexpMode = Reg(Bool())
+  val kexpMode = RegInit(false.B)
 
   // expanded round keys
   val xKey = RegInit(VecInit(Seq.fill(maxRounds)(0.U(maxWordWidth.W)))) // awful
@@ -72,10 +72,12 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   // asynchronously calculate values
   val xKey64Value = Wire(UInt(maxWordWidth.W))
   val xKey128Value = Wire(UInt(maxWordWidth.W))
-  xKey64Value := Cat(0.U(32.W), ~xKey(SIMON_64_128_ROUNDS.U-kexpPending)(31, 0) ^ rr1_64out ^ rr1_64in ^
-                       Cat(0.U(31.W), Z_64_128((SIMON_64_128_ROUNDS.U-kexpPending-SIMON_64_128_KEY_WORDS.U)%62.U)) ^ 3.U)
-  xKey128Value := ~xKey(SIMON_128_128_ROUNDS.U-kexpPending)(31, 0) ^ rr1_128out ^ rr1_128in ^
-                        Cat(0.U(31.W), Z_128_128((SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U)%62.U)) ^ 3.U
+  xKey64Value := Cat(0.U(32.W), ~xKey(SIMON_64_128_ROUNDS.U-kexpPending-SIMON_64_128_KEY_WORDS.U)(31, 0) ^ rr1_64out
+                       ^ rr1_64in ^ Cat(0.U(31.W),
+                                        Z_64_128((SIMON_64_128_ROUNDS.U-kexpPending-SIMON_64_128_KEY_WORDS.U)%62.U))
+                       ^ 3.U)
+  xKey128Value := ~xKey(SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U) ^ rr1_128out ^ rr1_128in ^
+                        Cat(0.U(63.W), Z_128_128((SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U)%62.U)) ^ 3.U
 
   switch(kexpState) {
     is (kexpIdle) {
