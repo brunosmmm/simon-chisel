@@ -35,9 +35,9 @@ class SimonRound(maxWordWidth: Int) extends Module {
   val rl8_128in = RegInit(0.U(SIMON_128_128_WORD_SIZE.W))
   val rl8_128out = Wire(UInt(SIMON_128_128_WORD_SIZE.W))
 
-  val rl_1_64 = Module(new RotateUnit(SIMON_64_128_WORD_SIZE, 1, true))
-  val rl_2_64 = Module(new RotateUnit(SIMON_64_128_WORD_SIZE, 2, true))
-  val rl_8_64 = Module(new RotateUnit(SIMON_64_128_WORD_SIZE, 8, true))
+  val rl_1_64 = Module(new RotateLeft(SIMON_64_128_WORD_SIZE, 1))
+  val rl_2_64 = Module(new RotateLeft(SIMON_64_128_WORD_SIZE, 2))
+  val rl_8_64 = Module(new RotateLeft(SIMON_64_128_WORD_SIZE, 8))
 
   rl_1_64.io.i_value := rl1_64in
   rl1_64out := rl_1_64.io.o_value
@@ -48,9 +48,9 @@ class SimonRound(maxWordWidth: Int) extends Module {
   rl_8_64.io.i_value := rl8_64in
   rl8_64out := rl_8_64.io.o_value
 
-  val rl_1_128 = Module(new RotateUnit(SIMON_128_128_WORD_SIZE, 1, true))
-  val rl_2_128 = Module(new RotateUnit(SIMON_128_128_WORD_SIZE, 2, true))
-  val rl_8_128 = Module(new RotateUnit(SIMON_128_128_WORD_SIZE, 8, true))
+  val rl_1_128 = Module(new RotateLeft(SIMON_128_128_WORD_SIZE, 1))
+  val rl_2_128 = Module(new RotateLeft(SIMON_128_128_WORD_SIZE, 2))
+  val rl_8_128 = Module(new RotateLeft(SIMON_128_128_WORD_SIZE, 8))
 
   rl_1_128.io.i_value := rl1_128in
   rl1_128out := rl_1_128.io.o_value

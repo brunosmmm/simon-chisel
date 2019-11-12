@@ -35,19 +35,19 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   val rr3_128in = RegInit(0.asUInt(SIMON_128_128_WORD_SIZE.W))
   val rr3_128out = Wire(UInt(SIMON_128_128_WORD_SIZE.W))
 
-  val rr_1_64 = Module(new RotateUnit(SIMON_64_128_WORD_SIZE, 1, false))
+  val rr_1_64 = Module(new RotateRight(SIMON_64_128_WORD_SIZE, 1))
   rr_1_64.io.i_value := rr1_64in
   rr1_64out := rr_1_64.io.o_value
 
-  val rr_3_64 = Module(new RotateUnit(SIMON_64_128_WORD_SIZE, 3, false))
+  val rr_3_64 = Module(new RotateRight(SIMON_64_128_WORD_SIZE, 3))
   rr_3_64.io.i_value := rr3_64in
   rr3_64out := rr_3_64.io.o_value
 
-  val rr_1_128 = Module(new RotateUnit(SIMON_128_128_WORD_SIZE, 1, false))
+  val rr_1_128 = Module(new RotateRight(SIMON_128_128_WORD_SIZE, 1))
   rr_1_128.io.i_value := rr1_128in
   rr1_128out := rr_1_128.io.o_value
 
-  val rr_3_128 = Module(new RotateUnit(SIMON_128_128_WORD_SIZE, 3, false))
+  val rr_3_128 = Module(new RotateRight(SIMON_128_128_WORD_SIZE, 3))
   rr_3_128.io.i_value := rr3_128in
   rr3_128out := rr_3_128.io.o_value
 
