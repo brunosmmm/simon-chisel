@@ -62,7 +62,7 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   val kexpMode = Reg(Bool())
 
   // expanded round keys
-  val xKey = RegInit(Vec(maxRounds, 0.U(maxWordWidth.W)))
+  val xKey = RegInit(VecInit(Seq.fill(maxRounds)(0.U(maxWordWidth.W)))) // awful
   io.expanded := xKey
 
   // generate outputs
@@ -74,8 +74,8 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   val xKey128Value = Wire(UInt(maxWordWidth.W))
   xKey64Value := Cat(0.U(32.W), ~xKey(SIMON_64_128_ROUNDS.U-kexpPending)(31, 0) ^ rr1_64out ^ rr1_64in ^
                        Cat(0.U(31.W), Z_64_128((SIMON_64_128_ROUNDS.U-kexpPending-SIMON_64_128_KEY_WORDS.U)%62.U)) ^ 3.U)
-  xKey128Value := Cat(0.U(32.W), ~xKey(SIMON_128_128_ROUNDS.U-kexpPending)(31, 0) ^ rr1_128out ^ rr1_128in ^
-                        Cat(0.U(31.W), Z_128_128((SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U)%62.U)) ^ 3.U)
+  xKey128Value := ~xKey(SIMON_128_128_ROUNDS.U-kexpPending)(31, 0) ^ rr1_128out ^ rr1_128in ^
+                        Cat(0.U(31.W), Z_128_128((SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U)%62.U)) ^ 3.U
 
   switch(kexpState) {
     is (kexpIdle) {
@@ -126,4 +126,8 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
       }
     }
   }
+}
+
+object SimonKexpDriver extends App {
+  chisel3.Driver.execute(args, () => new SimonKeyExpander(68, 64, 128))
 }
