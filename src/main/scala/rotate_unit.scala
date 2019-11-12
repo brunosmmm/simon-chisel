@@ -1,3 +1,5 @@
+package SimonAcc
+
 import chisel3._
 
 class RotateUnit(width: Int, amount: Int, left: Boolean) extends Module {
