@@ -18,8 +18,8 @@ class SimonRound(maxWordWidth: Int) extends Module {
       val iReady = Output(Bool())
     })
 
-  val SIMON_64_128_WORD_SIZE = 32
-  val SIMON_128_128_WORD_SIZE = 64
+  private val SIMON_64_128_WORD_SIZE = 32
+  private val SIMON_128_128_WORD_SIZE = 64
 
   val rl1_64in = RegInit(0.U(SIMON_64_128_WORD_SIZE.W))
   val rl1_64out = Wire(UInt(SIMON_64_128_WORD_SIZE.W))
@@ -69,6 +69,15 @@ class SimonRound(maxWordWidth: Int) extends Module {
   val encDecMode = RegInit(true.B)
   val simonMode = RegInit(false.B)
 
+  val output1 = RegInit(0.U(maxWordWidth.W))
+  val output2 = RegInit(0.U(maxWordWidth.W))
+  val isReady = RegInit(true.B)
+  val isValid = RegInit(false.B)
+  io.block1Out := output1
+  io.block2Out := output2
+  io.iReady := isReady
+  io.oValid := isValid
+
   when (io.encDec) {
     xIn := io.block1In
     yIn := io.block2In
@@ -80,12 +89,12 @@ class SimonRound(maxWordWidth: Int) extends Module {
   when (simonMode) {
     out := Cat(0.U(32.W), (rl1_64out & rl8_64out) ^ rl2_64out) ^ tmp
   }.otherwise {
-    (rl1_128out & rl8_128out) ^ rl2_128out ^ tmp
+    out := (rl1_128out & rl8_128out) ^ rl2_128out ^ tmp
   }
 
   // actual round process
   when (io.iValid && !busy) {
-    io.iReady := false.B
+    isReady := false.B
     busy := true.B
     encDecMode := io.encDec
     simonMode := io.mode
@@ -102,22 +111,22 @@ class SimonRound(maxWordWidth: Int) extends Module {
     }
 
     when (io.encDec) {
-      io.block2Out := io.block1In
+      output2 := io.block1In
     }.otherwise {
-      io.block1Out := io.block2In
+      output1 := io.block2In
     }
   }.otherwise {
     when (busy) {
-      io.oValid := true.B
-      io.iReady := true.B
+      isValid := true.B
+      isReady := true.B
       busy := false.B
       when (encDecMode) {
-        io.block1Out := out
+        output1 := out
       }.otherwise {
-        io.block2Out := out
+        output2 := out
       }
     }.otherwise {
-      io.oValid := false.B
+      isValid := false.B
     }
   }
 
