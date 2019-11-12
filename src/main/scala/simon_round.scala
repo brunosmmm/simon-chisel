@@ -86,7 +86,7 @@ class SimonRound(maxWordWidth: Int) extends Module {
     yIn := io.block1In
   }
 
-  when (simonMode) {
+  when (!simonMode) {
     out := Cat(0.U(32.W), (rl1_64out & rl8_64out) ^ rl2_64out) ^ tmp
   }.otherwise {
     out := (rl1_128out & rl8_128out) ^ rl2_128out ^ tmp
