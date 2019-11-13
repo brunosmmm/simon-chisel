@@ -10,14 +10,14 @@ import freechips.rocketchip.regmapper.{HasRegMap, RegField}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.UIntIsOneOf
 
-case class SimonParameters(address: BigInt, beatBytes: Int)
+case class SimonParams(address: BigInt, beatBytes: Int)
 
 trait SimonBundle extends Bundle {
 }
 
 trait SimonModule extends HasRegMap {
   implicit val p: Parameters
-  def params: SimonParameters
+  def params: SimonParams
 
   private val REG_SCONF = 0x00
   private val REG_KEY1 = 0x08
