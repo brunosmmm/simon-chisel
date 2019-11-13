@@ -9,6 +9,7 @@ class SimonCore(registerWidth: Int) extends Module {
       val keyL = Input(UInt(registerWidth.W))
       val keyH = Input(UInt(registerWidth.W))
       val kValid = Input(Bool())
+      val kExpBusy = Output(Bool())
       val sMode = Input(Bool())
       val data1In = Input(UInt(registerWidth.W))
       val data2In = Input(UInt(registerWidth.W))
@@ -20,6 +21,8 @@ class SimonCore(registerWidth: Int) extends Module {
       val dEncDec = Input(Bool())
       val rSingle = Input(Bool())
     })
+
+  io.kExpBusy := kBusy
 
   private val SIMON_64_128_ROUNDS = 44
   private val SIMON_128_128_ROUNDS = 68
