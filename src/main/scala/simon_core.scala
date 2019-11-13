@@ -76,8 +76,6 @@ class SimonCore(registerWidth: Int) extends Module {
   val roundKey = RegInit(0.U(64.W))
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
-  val outputData = RegInit(0.U(registerWidth.W))
-  io.oData := outputData
 
   // busy flag logic
   sconfBusy := kBusy || rBusy || !kExp.io.kReady || !sRound.io.iReady
