@@ -2,7 +2,10 @@
 import chisel3._
 import chisel3.utils._
 
-case class SimonParameters(address: BigInt)
+case class SimonParameters(address: BigInt, beatBytes: Int)
+
+trait SimonBundle extends Bundle {
+}
 
 trait SimonModule extends HasRegMap {
   implicit val p: Parameters
@@ -56,6 +59,7 @@ trait SimonModule extends HasRegMap {
     true.B
   }
 
+  // how can I make bits that clear themselves? not having an explicit clock is detrimental
   def writeData2(valid: Bool, bits: UInt): Bool = {
     when (valid && core.io.dInReady) {
       regData2 := bits
@@ -89,4 +93,23 @@ trait SimonModule extends HasRegMap {
     0x18 -> Seq(RegField(64, readData1, writeData2)),
     0x20 -> Seq(RegField(64, readData2, writeData2))
   )
+}
+
+class SimonTL(c: SimonParams)(implicit p: Parameters)
+  extends TLRegisterRouter(
+    c.address, "simon", Seq("esl,simon"),
+    beatBytes = c.beatBytes)(
+      new TLRegBundle(c, _) with SimonBundle)(
+      new TLRegModule(c, _, _) with SimonModule)
+
+trait HasPeripherySimonTL { this: BaseSubsystem =>
+  implicit val p: Parameters
+
+  private val address = 0x2000
+  private val portName = "simon"
+
+  val pwm = LazyModule(new SimonTL(
+    PWMParams(address, pbus.beatBytes))(p))
+
+  pbus.toVariableWidthSlave(Some(portName)) { pwm.node }
 }
