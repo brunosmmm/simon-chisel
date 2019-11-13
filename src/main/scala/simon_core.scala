@@ -6,18 +6,21 @@ import chisel3.util._
 class SimonCore(registerWidth: Int) extends Module {
   val io = IO(
     new Bundle {
-      val addr = Input(UInt(6.W))
-      val iData = Input(UInt(registerWidth.W))
-      val oData = Output(UInt(registerWidth.W))
-      val rd = Input(Bool())
-      val wr = Input(Bool())
+      val keyL = Input(UInt(registerWidth.W))
+      val keyH = Input(UInt(registerWidth.W))
+      val kValid = Input(Bool())
+      val sMode = Input(Bool())
+      val data1In = Input(UInt(registerWidth.W))
+      val data2In = Input(UInt(registerWidth.W))
+      val data1Out = Output(UInt(registerWidth.W))
+      val data2Out = Output(UInt(registerWidth.W))
+      val dInReady = Output(Bool())
+      val dInValid = Input(Bool())
+      val dOutValid = Output(Bool())
+      val dEncDec = Input(Bool())
+      val rSingle = Input(Bool())
     })
 
-  private val REG_SCONF = 0x00
-  private val REG_KEY1 = 0x08
-  private val REG_KEY2 = 0x10
-  private val REG_DATA1 = 0x18
-  private val REG_DATA2 = 0x20
   private val SIMON_64_128_ROUNDS = 44
   private val SIMON_128_128_ROUNDS = 68
 
@@ -27,12 +30,21 @@ class SimonCore(registerWidth: Int) extends Module {
   val sconfSingle = RegInit(false.B)
 
   // status portion
-  val sconfReady = RegInit(false.B)
+  val sconfReady = Wire(Bool())
   val sconfBusy = Wire(Bool())
+  sconfReady := ~sconfBusy
 
-  // register is a wire
-  val sconfReg = Wire(UInt(registerWidth.W))
-  sconfReg := Cat(0.U((registerWidth-6).W), sconfBusy, sconfReady, 0.U(1.W), sconfSingle, sconfEncDec, sconfMode)
+  // output flags
+  io.dInReady := sconfReady
+  io.dOutValid := ~rBusy
+
+  when (rBusy) {
+    io.data1Out := 0.U
+    io.data2Out := 0.U
+  }.otherwise {
+    io.data1Out := dataReg1
+    io.data2Out := dataReg2
+  }
 
   // key registers
   val keyRegL = RegInit(0.U(registerWidth.W))
@@ -78,54 +90,23 @@ class SimonCore(registerWidth: Int) extends Module {
   sRound.io.roundKey := roundKey
   sRound.io.iValid := roundIValid
 
-  // register write and round start logic
-  when(!kBusy && io.wr) {
-    expKValid := false.B
-    switch (io.addr) {
-      is (REG_SCONF.U) {
-        sconfMode := io.iData(0)
-        sconfEncDec := io.iData(1)
-        sconfSingle := io.iData(2)
-      }
-      is (REG_KEY1.U) {
-        keyRegL := io.iData
-        ready := false.B
-      }
-      is (REG_KEY2.U) {
-        keyRegH := io.iData
-        ready := false.B
-        expKValid := true.B
-        kBusy := true.B
-      }
-      is (REG_DATA1.U) {
-        dataReg1 := io.iData
-        when (!sconfMode) {
-          rStart := true.B
-        }
-      }
-      is (REG_DATA2.U) {
-        dataReg2 := io.iData
-        when (sconfMode) {
-          rStart := true.B
-        }
-      }
-    }
+  // trigger key expansion
+  when(!kBusy && io.kValid) {
+    expKValid := true.B
+    keyRegH := io.keyH
+    keyRegL := io.keyL
+    ready := false.B
+    kBusy := true.B
+    sconfMode := io.sMode
   }
 
-  // read logic
-  when (io.rd) {
-    outputData := 0.U
-    switch (io.addr) {
-      is (REG_SCONF.U) {
-        outputData := sconfReg
-      }
-      is (REG_DATA1.U) {
-        outputData := dataReg1
-      }
-      is (REG_DATA2.U) {
-        outputData := dataReg2
-      }
-    }
+  // start round
+  when (!kBusy && !rBusy && io.dInValid) {
+    sconfEncDec := io.dEncDec
+    sconfSingle := io.rSingle
+    dataReg1 := io.data1In
+    dataReg2 := io.data2In
+    rStart := true.B
   }
 
   // perform key expansion and round computations
