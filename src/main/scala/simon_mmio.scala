@@ -34,6 +34,7 @@ trait SimonModule extends HasRegMap {
   regRSconf := Cat(0.U((64-6).W), regWSconf(2, 0))
 
   // internal stuff
+  val dataValid = RegInit(false.B)
   val kExpStart = RegInit(false.B)
 
   def readSConf(ready: Bool): (Bool, UInt) = {
@@ -71,7 +72,7 @@ trait SimonModule extends HasRegMap {
   def writeData2(valid: Bool, bits: UInt): Bool = {
     when (valid && core.io.dInReady) {
       regData2 := bits
-      core.io.dInValid := true.B
+      dataValid := true.B
     }
     true.B
   }
@@ -93,6 +94,7 @@ trait SimonModule extends HasRegMap {
   core.io.dEncDec := regWSconf(1)
   core.io.rSingle := regWSconf(2)
   core.io.kValid := kExpStart
+  core.io.dInValid := dataValid
 
   regmap(
     0x00 -> Seq(RegField(64, readSConf(_), writeSConf(_,_))),
