@@ -22,8 +22,6 @@ class SimonCore(registerWidth: Int) extends Module {
       val rSingle = Input(Bool())
     })
 
-  io.kExpBusy := kBusy
-
   private val SIMON_64_128_ROUNDS = 44
   private val SIMON_128_128_ROUNDS = 68
 
@@ -39,15 +37,6 @@ class SimonCore(registerWidth: Int) extends Module {
 
   // output flags
   io.dInReady := sconfReady
-  io.dOutValid := ~rBusy
-
-  when (rBusy) {
-    io.data1Out := 0.U
-    io.data2Out := 0.U
-  }.otherwise {
-    io.data1Out := dataReg1
-    io.data2Out := dataReg2
-  }
 
   // key registers
   val keyRegL = RegInit(0.U(registerWidth.W))
@@ -76,6 +65,16 @@ class SimonCore(registerWidth: Int) extends Module {
   val roundKey = RegInit(0.U(64.W))
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
+  io.kExpBusy := kBusy
+  io.dOutValid := ~rBusy
+
+  when (rBusy) {
+    io.data1Out := 0.U
+    io.data2Out := 0.U
+  }.otherwise {
+    io.data1Out := dataReg1
+    io.data2Out := dataReg2
+  }
 
   // busy flag logic
   sconfBusy := kBusy || rBusy || !kExp.io.kReady || !sRound.io.iReady
