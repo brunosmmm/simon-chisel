@@ -108,8 +108,13 @@ trait HasPeripherySimonTL { this: BaseSubsystem =>
   private val address = 0x2000
   private val portName = "simon"
 
-  val pwm = LazyModule(new SimonTL(
-    PWMParams(address, pbus.beatBytes))(p))
+  val simon = LazyModule(new SimonTL(
+    SimonParams(address, pbus.beatBytes))(p))
 
-  pbus.toVariableWidthSlave(Some(portName)) { pwm.node }
+  pbus.toVariableWidthSlave(Some(portName)) { simon.node }
+}
+
+trait HasPeripherySimonTLModuleImp extends LazyModuleImp {
+  implicit val p: Parameters
+  val outer: HasPeripherySimonTL
 }
