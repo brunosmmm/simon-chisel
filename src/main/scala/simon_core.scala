@@ -58,7 +58,6 @@ class SimonCore(registerWidth: Int) extends Module {
   // internal states
   val kBusy = RegInit(false.B)
   val rBusy = RegInit(false.B)
-  val ready = RegInit(false.B)
   val rStart = RegInit(false.B)
   val pendingRounds = RegInit(0.U(68.W))
   val roundCounter = RegInit(0.U(68.W))
@@ -91,17 +90,23 @@ class SimonCore(registerWidth: Int) extends Module {
   sRound.io.iValid := roundIValid
 
   // trigger key expansion
-  when(!kBusy && io.kValid) {
+  when(!kBusy && io.kValid && kExp.io.kReady) {
     expKValid := true.B
     keyRegH := io.keyH
     keyRegL := io.keyL
-    ready := false.B
     kBusy := true.B
     sconfMode := io.sMode
+  }.otherwise {
+    when (kBusy && kExp.io.kValid) {
+      // key expansion finished,
+      // deassert kBusy signal
+      kBusy := false.B
+      expKValid := false.B
+    }
   }
 
   // start round
-  when (!kBusy && !rBusy && io.dInValid) {
+  when (!kBusy && !rBusy && !rStart && io.dInValid) {
     sconfEncDec := io.dEncDec
     sconfSingle := io.rSingle
     dataReg1 := io.data1In
@@ -109,8 +114,8 @@ class SimonCore(registerWidth: Int) extends Module {
     rStart := true.B
   }
 
-  // perform key expansion and round computations
-  when (ready && rStart) {
+  // perform round computations
+  when (sconfReady && rStart) {
     when (sRound.io.oValid) {
       when (pendingRounds === 0.U) {
         dataReg1 := sRound.io.block1Out
