@@ -37,6 +37,11 @@ trait SimonModule extends HasRegMap {
   val dataValid = RegInit(false.B)
   val kExpStart = RegInit(false.B)
 
+  // self-clearing bit?
+  when (dataValid) {
+    dataValid := false.B
+  }
+
   def readSConf(ready: Bool): (Bool, UInt) = {
     (true.B, regRSconf)
   }
@@ -115,7 +120,7 @@ class SimonTL(c: SimonParams)(implicit p: Parameters)
 trait HasPeripherySimonTL { this: BaseSubsystem =>
   implicit val p: Parameters
 
-  private val address = 0x2000
+  private val address = 0x1000000
   private val portName = "simon"
 
   val simon = LazyModule(new SimonTL(
