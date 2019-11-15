@@ -35,7 +35,7 @@ trait SimonModule extends HasRegMap {
   val dataValid = RegInit(false.B)
   val kExpStart = RegInit(false.B)
 
-  val core = Module(new SimonCore(64))
+  val core = Module(new SimonCore(64, 128))
   core.io.keyH := regKeyH
   core.io.keyL := regKeyL
   core.io.data1In := regData1
@@ -47,7 +47,7 @@ trait SimonModule extends HasRegMap {
   core.io.dInValid := dataValid
 
   val regRSconf = Wire(UInt(64.W))
-  regRSconf := Cat(0.U((64-5).W), core.io.dInReady, 0.U(1.W), regWSconf(2, 0))
+  regRSconf := Cat(0.U((64-5).W), core.io.dInReady, core.io.kExpDone, regWSconf(2, 0))
 
   // self-clearing bit?
   when (dataValid) {

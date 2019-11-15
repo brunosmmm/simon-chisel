@@ -3,13 +3,13 @@ package SimonAcc
 import chisel3._
 import chisel3.util._
 
-class SimonCore(registerWidth: Int) extends Module {
+class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   val io = IO(
     new Bundle {
       val keyL = Input(UInt(registerWidth.W))
       val keyH = Input(UInt(registerWidth.W))
       val kValid = Input(Bool())
-      val kExpBusy = Output(Bool())
+      val kExpDone = Output(Bool())
       val sMode = Input(Bool())
       val data1In = Input(UInt(registerWidth.W))
       val data2In = Input(UInt(registerWidth.W))
@@ -33,7 +33,6 @@ class SimonCore(registerWidth: Int) extends Module {
   // status portion
   val sconfReady = Wire(Bool())
   val sconfBusy = Wire(Bool())
-  sconfReady := ~sconfBusy
 
   // output flags
   io.dInReady := sconfReady
@@ -50,12 +49,13 @@ class SimonCore(registerWidth: Int) extends Module {
   val dataReg2 = RegInit(0.U(registerWidth.W))
 
   // key expander
-  val kExp = Module(new SimonKeyExpander(SIMON_128_128_ROUNDS, 64, 128))
+  val kExp = Module(new SimonKeyExpander(SIMON_128_128_ROUNDS, registerWidth, keyWidth))
 
   // round computer
   val sRound = Module(new SimonRound(64))
 
   // internal states
+  val kExpDone = RegInit(false.B)
   val rBusy = RegInit(false.B)
   val rStart = RegInit(false.B)
   val pendingRounds = RegInit(0.U(68.W))
@@ -63,8 +63,9 @@ class SimonCore(registerWidth: Int) extends Module {
   val roundKey = RegInit(0.U(64.W))
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
-  io.kExpBusy := expKValid
+  io.kExpDone := kExpDone
   io.dOutValid := ~rBusy
+  sconfReady := ~sconfBusy && kExpDone
 
   when (rBusy) {
     io.data1Out := 0.U
@@ -91,6 +92,7 @@ class SimonCore(registerWidth: Int) extends Module {
   // trigger key expansion
   when(!expKValid && io.kValid && kExp.io.kReady) {
     expKValid := true.B
+    kexpDone := false.B
     keyRegH := io.keyH
     keyRegL := io.keyL
     sconfMode := io.sMode
@@ -99,6 +101,7 @@ class SimonCore(registerWidth: Int) extends Module {
       // key expansion finished,
       // deassert key expansion signal
       expKValid := false.B
+      kexpDone := true.B
     }
   }
 
