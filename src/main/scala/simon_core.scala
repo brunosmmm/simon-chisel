@@ -107,6 +107,10 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
 
   // start round
   when (!expKValid && !rBusy && !rStart && io.dInValid) {
+    when(sconfEncDec^io.dEncDec) {
+      // reset round counter
+      roundCounter := 0.U
+    }
     sconfEncDec := io.dEncDec
     sconfSingle := io.rSingle
     dataReg1 := io.data1In
