@@ -56,7 +56,6 @@ class SimonCore(registerWidth: Int) extends Module {
   val sRound = Module(new SimonRound(64))
 
   // internal states
-  val kBusy = RegInit(false.B)
   val rBusy = RegInit(false.B)
   val rStart = RegInit(false.B)
   val pendingRounds = RegInit(0.U(68.W))
@@ -64,7 +63,7 @@ class SimonCore(registerWidth: Int) extends Module {
   val roundKey = RegInit(0.U(64.W))
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
-  io.kExpBusy := kBusy
+  io.kExpBusy := expKValid
   io.dOutValid := ~rBusy
 
   when (rBusy) {
@@ -76,7 +75,7 @@ class SimonCore(registerWidth: Int) extends Module {
   }
 
   // busy flag logic
-  sconfBusy := kBusy || rBusy || !kExp.io.kReady || !sRound.io.iReady
+  sconfBusy := expKValid || rBusy || !kExp.io.kReady || !sRound.io.iReady
 
   // connect other signals
   kExp.io.mode := sconfMode
@@ -90,23 +89,21 @@ class SimonCore(registerWidth: Int) extends Module {
   sRound.io.iValid := roundIValid
 
   // trigger key expansion
-  when(!kBusy && io.kValid && kExp.io.kReady) {
+  when(!expKValid && io.kValid && kExp.io.kReady) {
     expKValid := true.B
     keyRegH := io.keyH
     keyRegL := io.keyL
-    kBusy := true.B
     sconfMode := io.sMode
   }.otherwise {
-    when (kBusy && kExp.io.kValid) {
+    when (expKValid && kExp.io.expValid) {
       // key expansion finished,
-      // deassert kBusy signal
-      kBusy := false.B
+      // deassert key expansion signal
       expKValid := false.B
     }
   }
 
   // start round
-  when (!kBusy && !rBusy && !rStart && io.dInValid) {
+  when (!expKValid && !rBusy && !rStart && io.dInValid) {
     sconfEncDec := io.dEncDec
     sconfSingle := io.rSingle
     dataReg1 := io.data1In
