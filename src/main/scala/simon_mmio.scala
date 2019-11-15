@@ -110,7 +110,7 @@ trait SimonModule extends HasRegMap {
     0x00 -> Seq(RegField(64, readSConf(_), writeSConf(_,_))),
     0x08 -> Seq(RegField(64, readKey(_), writeKeyL(_,_))),
     0x10 -> Seq(RegField(64, readKey(_), writeKeyH(_,_))),
-    0x18 -> Seq(RegField(64, readData1(_), writeData2(_,_))),
+    0x18 -> Seq(RegField(64, readData1(_), writeData1(_,_))),
     0x20 -> Seq(RegField(64, readData2(_), writeData2(_,_)))
   )
 }
