@@ -25,4 +25,5 @@ class SimonRoCCModule(outer: SimonRoCC)
   //   xs2 - is the second source register being used?
   // rs1 - the value of source register 1
   // rs2 - the value of source register 2
+  val core = Module(new SimonCore(64, 128))
 }
