@@ -68,7 +68,7 @@ trait SimonModule extends HasRegMap {
   }
 
   def writeKeyH(valid: Bool, bits: UInt): Bool = {
-    when (valid && !core.io.kExpBusy) {
+    when (valid && core.io.dInReady) {
       regKeyH := bits
       kExpStart := true.B
     }
@@ -76,7 +76,7 @@ trait SimonModule extends HasRegMap {
   }
 
   def writeKeyL(valid: Bool, bits: UInt): Bool = {
-    when (valid && !core.io.kExpBusy) { regKeyL := bits  }
+    when (valid && core.io.dInReady) { regKeyL := bits  }
     true.B
   }
 

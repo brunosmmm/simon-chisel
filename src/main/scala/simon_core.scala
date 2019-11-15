@@ -165,5 +165,5 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
 }
 
 object SimonCoreDriver extends App {
-  chisel3.Driver.execute(args, () => new SimonCore(64))
+  chisel3.Driver.execute(args, () => new SimonCore(64, 128))
 }
