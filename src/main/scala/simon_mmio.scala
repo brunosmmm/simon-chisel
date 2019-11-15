@@ -54,6 +54,10 @@ trait SimonModule extends HasRegMap {
     dataValid := false.B
   }
 
+  when (kExpStart) {
+    kExpStart := false.B
+  }
+
   def readSConf(ready: Bool): (Bool, UInt) = {
     (true.B, regRSconf)
   }
