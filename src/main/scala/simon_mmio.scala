@@ -30,12 +30,24 @@ trait SimonModule extends HasRegMap {
   val regData1 = Reg(UInt(64.W))
   val regData2 = Reg(UInt(64.W))
   val regWSconf = RegInit(0.U(64.W))
-  val regRSconf = Wire(UInt(64.W))
-  regRSconf := Cat(0.U((64-6).W), regWSconf(2, 0))
 
   // internal stuff
   val dataValid = RegInit(false.B)
   val kExpStart = RegInit(false.B)
+
+  val core = Module(new SimonCore(64))
+  core.io.keyH := regKeyH
+  core.io.keyL := regKeyL
+  core.io.data1In := regData1
+  core.io.data2In := regData2
+  core.io.sMode := regWSconf(0)
+  core.io.dEncDec := regWSconf(1)
+  core.io.rSingle := regWSconf(2)
+  core.io.kValid := kExpStart
+  core.io.dInValid := dataValid
+
+  val regRSconf = Wire(UInt(64.W))
+  regRSconf := Cat(0.U((64-5).W), core.io.dInReady, 0.U(1.W), regWSconf(2, 0))
 
   // self-clearing bit?
   when (dataValid) {
@@ -89,17 +101,6 @@ trait SimonModule extends HasRegMap {
   def readData2(ready: Bool): (Bool, UInt) = {
     (true.B, core.io.data2Out)
   }
-
-  val core = Module(new SimonCore(64))
-  core.io.keyH := regKeyH
-  core.io.keyL := regKeyL
-  core.io.data1In := regData1
-  core.io.data2In := regData2
-  core.io.sMode := regWSconf(0)
-  core.io.dEncDec := regWSconf(1)
-  core.io.rSingle := regWSconf(2)
-  core.io.kValid := kExpStart
-  core.io.dInValid := dataValid
 
   regmap(
     0x00 -> Seq(RegField(64, readSConf(_), writeSConf(_,_))),
