@@ -10,6 +10,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
       val keyH = Input(UInt(registerWidth.W))
       val kValid = Input(Bool())
       val kExpDone = Output(Bool())
+      val kReady = Output(Bool())
       val sMode = Input(Bool())
       val data1In = Input(UInt(registerWidth.W))
       val data2In = Input(UInt(registerWidth.W))
@@ -66,6 +67,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   io.kExpDone := kExpDone
   io.dOutValid := ~rBusy && sRound.io.oValid
   sconfReady := ~sconfBusy && kExpDone
+  io.kReady := kExp.io.kReady && ~sconfBusy
 
   when (rBusy) {
     io.data1Out := 0.U
