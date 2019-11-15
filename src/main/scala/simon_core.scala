@@ -153,9 +153,9 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
         roundKey := kExp.io.expanded(roundCounter)
       }.otherwise {
         when (!sconfMode) {
-          roundKey := kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter)
+          roundKey := kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter - 1.U)
         }.otherwise {
-          roundKey := kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter)
+          roundKey := kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter - 1.U)
         }
       }
       when (sconfSingle) {
