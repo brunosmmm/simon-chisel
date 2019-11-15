@@ -92,6 +92,8 @@ trait SimonModule extends HasRegMap {
   // how can I make bits that clear themselves? not having an explicit clock is detrimental
   def writeData2(valid: Bool, bits: UInt): Bool = {
     when (valid && core.io.dInReady) {
+      // update data register 1
+      regData1 := core.io.data1Out
       regData2 := bits
       dataValid := true.B
     }
