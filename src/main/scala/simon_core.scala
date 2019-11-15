@@ -92,7 +92,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   // trigger key expansion
   when(!expKValid && io.kValid && kExp.io.kReady) {
     expKValid := true.B
-    kexpDone := false.B
+    kExpDone := false.B
     keyRegH := io.keyH
     keyRegL := io.keyL
     sconfMode := io.sMode
@@ -101,7 +101,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
       // key expansion finished,
       // deassert key expansion signal
       expKValid := false.B
-      kexpDone := true.B
+      kExpDone := true.B
     }
   }
 
