@@ -34,6 +34,7 @@ trait SimonModule extends HasRegMap {
   // internal stuff
   val dataValid = RegInit(false.B)
   val kExpStart = RegInit(false.B)
+  val wroteData1 = RegInit(false.B)
 
   val core = Module(new SimonCore(64, 128))
   core.io.keyH := regKeyH
@@ -85,15 +86,22 @@ trait SimonModule extends HasRegMap {
   }
 
   def writeData1(valid: Bool, bits: UInt): Bool = {
-    when (valid && core.io.dInReady) { regData1 := bits  }
+    when (valid && core.io.dInReady) {
+      regData1 := bits
+      wroteData1 := true.B
+    }
     true.B
   }
 
   // how can I make bits that clear themselves? not having an explicit clock is detrimental
   def writeData2(valid: Bool, bits: UInt): Bool = {
     when (valid && core.io.dInReady) {
-      // update data register 1
-      regData1 := core.io.data1Out
+      // update data register 1 value when re-starting
+      when (!wroteData1) {
+        regData1 := core.io.data1Out
+      }.otherwise {
+        wroteData1 := false.B
+      }
       regData2 := bits
       dataValid := true.B
     }
