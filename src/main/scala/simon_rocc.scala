@@ -13,7 +13,6 @@ class SimonRoCC(opcodes: OpcodeSet)
 
 class SimonRoCCModule(outer: SimonRoCC)
     extends LazyRoCCModuleImp(outer) {
-  val cmd = Queue(io.cmd)
   // The parts of the command are as follows
   // inst - the parts of the instruction itself
   //   opcode
@@ -68,6 +67,8 @@ class SimonRoCCModule(outer: SimonRoCC)
   core.io.rSingle := coreSingle
   core.io.kValid := coreKeyValid
 
+  val responseValid = RegInit(false.B)
+  val responsePending = RegInit(false.B)
   val stallResponse = Wire(Bool())
   stallResponse := cmd.bits.inst.xd && !io.resp.ready
 
@@ -80,23 +81,33 @@ class SimonRoCCModule(outer: SimonRoCC)
     coreDataValid := false.B
   }
 
+  when (responseValid) {
+    responseValid := false.B
+  }
+
+  when (responsePending) {
+    when (io.resp.ready) {
+      responseValid := true.B
+      responsePending := false.B
+    }
+  }
+
   // other
-  val responseValid = RegNext(cmd.valid && cmd.bits.inst.xd && !kBusy && !rBusy && !stallResponse)
   io.interrupt := false.B
   io.resp.bits.rd := cmd.bits.inst.rd
   io.resp.bits.data := Mux(operation===FUNC_GET_HWORD.U, hWord, respData)
   io.resp.valid := responseValid
   io.busy := kBusy || rBusy
-  cmd.ready := !kBusy && !rBusy && !stallResponse
+  io.cmd.ready := !kBusy && !rBusy && !stallResponse
 
   // receive instructions
-  when (cmd.fire()) {
+  when (io.cmd.fire()) {
     switch (operation) {
       is (FUNC_INIT.U) {
         // initialize
         coreMode := mode
-        coreKeyH := cmd.bits.rs2
-        coreKeyL := cmd.bits.rs1
+        coreKeyH := io.cmd.bits.rs2
+        coreKeyL := io.cmd.bits.rs1
         coreKeyValid := true.B
         kBusy := true.B
         when (coreMode) {
@@ -107,16 +118,16 @@ class SimonRoCCModule(outer: SimonRoCC)
       }
       is (FUNC_ENC_ROUND.U) {
         coreEncDec := true.B
-        coreData1 := cmd.bits.rs1
-        coreData2 := cmd.bits.rs2
+        coreData1 := io.cmd.bits.rs1
+        coreData2 := io.cmd.bits.rs2
         coreDataValid := true.B
         rBusy := true.B
         coreSingle := true.B
       }
       is (FUNC_DEC_ROUND.U) {
         coreEncDec := false.B
-        coreData1 := cmd.bits.rs1
-        coreData2 := cmd.bits.rs2
+        coreData1 := io.cmd.bits.rs1
+        coreData2 := io.cmd.bits.rs2
         coreDataValid := true.B
         rBusy := true.B
         coreSingle := true.B
@@ -127,12 +138,22 @@ class SimonRoCCModule(outer: SimonRoCC)
   when (kBusy) {
     when (core.io.kExpDone) {
       kBusy := false.B
+      when (io.cmd.bits.inst.xd && io.resp.ready) {
+        responseValid := true.B
+      }.otherwise {
+        responsePending := true.B
+      }
     }
   }
 
   when (rBusy) {
     when (core.io.dOutValid) {
       rBusy := false.B
+      when (io.cmd.bits.inst.xd && io.resp.ready) {
+        responseValid := true.B
+      }.otherwise {
+        responsePending := true.B
+      }
       when (coreMode) {
         hWord := core.io.data2Out
         respData := core.io.data1Out
