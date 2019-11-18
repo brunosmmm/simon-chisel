@@ -110,7 +110,7 @@ class SimonRoCCModule(outer: SimonRoCC)
         coreKeyL := io.cmd.bits.rs1
         coreKeyValid := true.B
         kBusy := true.B
-        when (coreMode) {
+        when (mode) {
           respData := SIMON_128_128_ROUNDS.U
         }.otherwise {
           respData := SIMON_64_128_ROUNDS.U
@@ -118,16 +118,26 @@ class SimonRoCCModule(outer: SimonRoCC)
       }
       is (FUNC_ENC_ROUND.U) {
         coreEncDec := true.B
-        coreData1 := io.cmd.bits.rs1
-        coreData2 := io.cmd.bits.rs2
+        when (coreMode) {
+          coreData1 := io.cmd.bits.rs1
+          coreData2 := io.cmd.bits.rs2
+        }.otherwise {
+          coreData1 := io.cmd.bits.rs1(31,0)
+          coreData2 := io.cmd.bits.rs1(63, 32)
+        }
         coreDataValid := true.B
         rBusy := true.B
         coreSingle := true.B
       }
       is (FUNC_DEC_ROUND.U) {
         coreEncDec := false.B
-        coreData1 := io.cmd.bits.rs1
-        coreData2 := io.cmd.bits.rs2
+        when (coreMode) {
+          coreData1 := io.cmd.bits.rs1
+          coreData2 := io.cmd.bits.rs2
+        }.otherwise {
+          coreData1 := io.cmd.bits.rs1(31,0)
+          coreData2 := io.cmd.bits.rs1(63, 32)
+        }
         coreDataValid := true.B
         rBusy := true.B
         coreSingle := true.B
