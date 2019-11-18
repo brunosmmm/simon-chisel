@@ -89,7 +89,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   }
 
   when (responsePending) {
-    when (io.resp.ready) {
+    when (wantsResponse && io.resp.ready) {
       responseValid := true.B
       responsePending := false.B
     }
@@ -158,7 +158,9 @@ class SimonRoCCModule(outer: SimonRoCC)
       when (wantsResponse && io.resp.ready) {
         responseValid := true.B
       }.otherwise {
-        responsePending := true.B
+        when (wantsResponse) {
+          responsePending := true.B
+        }
       }
     }
   }
@@ -170,7 +172,9 @@ class SimonRoCCModule(outer: SimonRoCC)
       when (wantsResponse && io.resp.ready) {
         responseValid := true.B
       }.otherwise {
-        responsePending := true.B
+        when (wantsResponse) {
+          responsePending := true.B
+        }
       }
       when (coreMode) {
         hWord := core.io.data2Out
