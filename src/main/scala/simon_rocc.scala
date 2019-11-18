@@ -110,7 +110,7 @@ class SimonRoCCModule(outer: SimonRoCC)
         coreKeyL := io.cmd.bits.rs1
         coreKeyValid := true.B
         kBusy := true.B
-        when (mode) {
+        when (mode === 1.U) {
           respData := SIMON_128_128_ROUNDS.U
         }.otherwise {
           respData := SIMON_64_128_ROUNDS.U
