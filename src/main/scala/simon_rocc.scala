@@ -66,6 +66,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   core.io.data2In := coreData2
   core.io.dInValid := coreDataValid
   core.io.rSingle := coreSingle
+  core.io.kValid := coreKeyValid
 
   val stallResponse = Wire(Bool())
   stallResponse := cmd.bits.inst.xd && !io.resp.ready
