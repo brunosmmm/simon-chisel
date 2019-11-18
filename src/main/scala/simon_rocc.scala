@@ -42,8 +42,8 @@ class SimonRoCCModule(outer: SimonRoCC)
   private val SIMON_64_128_ROUNDS = 44
   private val SIMON_128_128_ROUNDS = 68
 
-  val operation = (cmd.bits.inst.funct & SIMON_FUNCT_OP_MASK) >>> SIMON_FUNCT_OP_OFFSET
-  val mode = cmd.bits.inst.funct & SIMON_FUNCT_MODE_MASK
+  val operation = (cmd.bits.inst.funct & SIMON_FUNCT_OP_MASK.U) >>> SIMON_FUNCT_OP_OFFSET
+  val mode = cmd.bits.inst.funct & SIMON_FUNCT_MODE_MASK.U
   val kBusy = RegInit(false.B)
   val rBusy = RegInit(false.B)
   val hWord = RegInit(0.U(64.W))
@@ -68,7 +68,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   core.io.rSingle := coreSingle
 
   val stallResponse = Wire(Bool())
-  stallResponse = cmd.bits.inst.xd && !io.resp.ready
+  stallResponse := cmd.bits.inst.xd && !io.resp.ready
 
   // auto clear
   when (coreKeyValid) {
