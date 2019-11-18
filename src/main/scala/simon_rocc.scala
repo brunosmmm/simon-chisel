@@ -42,7 +42,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   private val SIMON_64_128_ROUNDS = 44
   private val SIMON_128_128_ROUNDS = 68
 
-  val operation = (cmd.bits.inst.funct & SIMON_FUNCT_OP_MASK.U) >>> SIMON_FUNCT_OP_OFFSET
+  val operation = (cmd.bits.inst.funct & SIMON_FUNCT_OP_MASK.U) >> SIMON_FUNCT_OP_OFFSET
   val mode = cmd.bits.inst.funct & SIMON_FUNCT_MODE_MASK.U
   val kBusy = RegInit(false.B)
   val rBusy = RegInit(false.B)
