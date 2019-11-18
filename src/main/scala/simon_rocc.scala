@@ -71,6 +71,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   val responsePending = RegInit(false.B)
   val stallResponse = Wire(Bool())
   val wantsResponse = RegInit(false.B)
+  val responseDest = RegInit(0.U(5.W))
   stallResponse := io.cmd.bits.inst.xd && !io.resp.ready
 
   // auto clear
@@ -95,7 +96,7 @@ class SimonRoCCModule(outer: SimonRoCC)
 
   // other
   io.interrupt := false.B
-  io.resp.bits.rd := io.cmd.bits.inst.rd
+  io.resp.bits.rd := responseDest
   io.resp.bits.data := Mux(operation===FUNC_GET_HWORD.U, hWord, respData)
   io.resp.valid := responseValid
   io.busy := kBusy || rBusy
@@ -103,7 +104,8 @@ class SimonRoCCModule(outer: SimonRoCC)
 
   // receive instructions
   when (io.cmd.fire()) {
-    wantsResponse := io.cmd.bits.inst.rd
+    wantsResponse := io.cmd.bits.inst.xd
+    responseDest := io.cmd.bits.inst.rd
     switch (operation) {
       is (FUNC_INIT.U) {
         // initialize
