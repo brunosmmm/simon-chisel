@@ -82,7 +82,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   // other
   io.interrupt := false.B
   io.resp.bits.rd := cmd.bits.inst.rd
-  io.resp.bits.data := Mux(operation===FUNC_GET_HWORD, hWord, respData)
+  io.resp.bits.data := Mux(operation===FUNC_GET_HWORD.U, hWord, respData)
   io.resp.valid := cmd.valid && cmd.bits.inst.xd && !rBusy && !stallResponse
   io.busy := kBusy || rBusy
   cmd.ready := !kBusy && !rBusy && !stallResponse
@@ -98,9 +98,9 @@ class SimonRoCCModule(outer: SimonRoCC)
         coreKeyValid := true.B
         kBusy := true.B
         when (coreMode) {
-          respData := SIMON_128_128_ROUNDS
+          respData := SIMON_128_128_ROUNDS.U
         }.otherwise {
-          respData := SIMON_64_128_ROUNDS
+          respData := SIMON_64_128_ROUNDS.U
         }
       }
       is (FUNC_ENC_ROUND.U) {
