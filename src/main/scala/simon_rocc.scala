@@ -41,8 +41,8 @@ class SimonRoCCModule(outer: SimonRoCC)
   private val SIMON_64_128_ROUNDS = 44
   private val SIMON_128_128_ROUNDS = 68
 
-  val operation = (cmd.bits.inst.funct & SIMON_FUNCT_OP_MASK.U) >> SIMON_FUNCT_OP_OFFSET
-  val mode = cmd.bits.inst.funct & SIMON_FUNCT_MODE_MASK.U
+  val operation = (io.cmd.bits.inst.funct & SIMON_FUNCT_OP_MASK.U) >> SIMON_FUNCT_OP_OFFSET
+  val mode = io.cmd.bits.inst.funct & SIMON_FUNCT_MODE_MASK.U
   val kBusy = RegInit(false.B)
   val rBusy = RegInit(false.B)
   val hWord = RegInit(0.U(64.W))
@@ -70,7 +70,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   val responseValid = RegInit(false.B)
   val responsePending = RegInit(false.B)
   val stallResponse = Wire(Bool())
-  stallResponse := cmd.bits.inst.xd && !io.resp.ready
+  stallResponse := io.cmd.bits.inst.xd && !io.resp.ready
 
   // auto clear
   when (coreKeyValid) {
@@ -94,7 +94,7 @@ class SimonRoCCModule(outer: SimonRoCC)
 
   // other
   io.interrupt := false.B
-  io.resp.bits.rd := cmd.bits.inst.rd
+  io.resp.bits.rd := io.cmd.bits.inst.rd
   io.resp.bits.data := Mux(operation===FUNC_GET_HWORD.U, hWord, respData)
   io.resp.valid := responseValid
   io.busy := kBusy || rBusy
