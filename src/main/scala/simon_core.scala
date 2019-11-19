@@ -123,9 +123,9 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   // perform round computations
   when (rStart) {
     when (sRound.io.oValid) {
+      dataReg1 := sRound.io.block1Out
+      dataReg2 := sRound.io.block2Out
       when (pendingRounds === 0.U) {
-        dataReg1 := sRound.io.block1Out
-        dataReg2 := sRound.io.block2Out
         rBusy := false.B
         roundIValid := false.B
         rStart := false.B
