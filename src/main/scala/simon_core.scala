@@ -147,6 +147,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
         roundIValid := true.B
       }
     }.otherwise {
+      when (!roundIValid) {
       roundIValid := true.B
       rBusy := true.B
       when (sconfEncDec) {
@@ -166,6 +167,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
         }.otherwise {
           pendingRounds := SIMON_128_128_ROUNDS.U
         }
+      }
       }
     }
   }
