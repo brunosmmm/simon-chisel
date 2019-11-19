@@ -38,7 +38,6 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
   val state_idle :: state_request_rd :: state_request_wr :: state_response_rd :: state_response_wr :: Nil = Enum(5)
   val state = RegInit(state_idle)
 
-  val isReady = Wire(Bool())
   io.ready := state === state_idle && mem.a.ready
 
   mem.a.valid := (state === state_request_rd) || (state === state_request_wr)
