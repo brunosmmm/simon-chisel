@@ -90,7 +90,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
       }
     }
     is (state_response_wr) {
-      when (edge.done(mem.a)) {
+      when (edge.d.fire()) {
         state := state_idle
         wrDone := true.B
       }
