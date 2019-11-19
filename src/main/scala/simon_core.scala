@@ -65,8 +65,9 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
   val firstRound = RegInit(true.B)
+  val outValid = RegInit(false.B)
+  io.dOutValid := outValid
   io.kExpDone := kExpDone
-  io.dOutValid := ~rBusy && sRound.io.oValid
   sconfReady := ~sconfBusy && kExpDone
   io.kReady := kExp.io.kReady && ~sconfBusy
 
@@ -119,6 +120,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
     dataReg1 := io.data1In
     dataReg2 := io.data2In
     rStart := true.B
+    outValid := false.B
   }
 
   when (roundIValid) {
@@ -153,6 +155,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
         roundIValid := false.B
         rStart := false.B
         firstRound := true.B
+        outValid := true.B
       }.otherwise {
         pendingRounds := pendingRounds - 1.U
         roundIValid := true.B
