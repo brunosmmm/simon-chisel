@@ -5,8 +5,8 @@ import chisel3.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.subsystem.{BaseSubsystem, CacheBlockBytes}
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, IdRange}
-import testchipip.TLHelper
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.tilelink._
 
 class SimonToosly(opcodes: OpcodeSet)
     (implicit p: Parameters) extends LazyRoCC(opcodes) {
@@ -17,8 +17,7 @@ class SimonToosly(opcodes: OpcodeSet)
 
 class SimonTooslyMemModule(implicit p: Parameters) extends LazyModule {
   lazy val module = new SimonTooslyMemModuleImp(this)
-  val node = TLHelper.makeClientNode(
-    name = "simon-toosly", sourceId = IdRange(0, 1))
+  val node = TLClientNode(Seq(TLClientPortParameters(Seq(TLClientParameters("simon-toosly")))))
 }
 
 class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameters) extends LazyModuleImp(outer)
