@@ -311,6 +311,10 @@ class SimonTooslyModule(outer: SimonToosly)
     memWr := false.B
   }
 
+  when (memRd) {
+    memRd := false.B
+  }
+
   when (memCtl.io.rdValid) {
     memRdAck := true.B
   }.otherwise {
@@ -326,7 +330,7 @@ class SimonTooslyModule(outer: SimonToosly)
   when (loadPending && !storePending) {
     when (memCtl.io.ready) {
       memRd := true.B
-      when (memRd && memCtl.io.rdValid && !memRdAck) {
+      when (memCtl.io.rdValid && !memRdAck) {
         // read done
         memRd := false.B
         coreData1 := memCtl.io.dataOut(31, 0)
