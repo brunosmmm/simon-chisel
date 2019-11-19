@@ -64,6 +64,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   val roundKey = RegInit(0.U(64.W))
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
+  val firstRound = RegInit(true.B)
   io.kExpDone := kExpDone
   io.dOutValid := ~rBusy && sRound.io.oValid
   sconfReady := ~sconfBusy && kExpDone
@@ -120,6 +121,10 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
     rStart := true.B
   }
 
+  when (roundIValid) {
+    roundIValid := false.B
+  }
+
   // perform round computations
   when (rStart) {
     when (sRound.io.oValid) {
@@ -129,6 +134,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
         rBusy := false.B
         roundIValid := false.B
         rStart := false.B
+        firstRound := true.B
         when (!sconfMode) {
           when (roundCounter === (SIMON_64_128_ROUNDS - 1).U) {
             roundCounter := 0.U
@@ -147,27 +153,28 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
         roundIValid := true.B
       }
     }.otherwise {
-      when (!roundIValid) {
-      roundIValid := true.B
-      rBusy := true.B
-      when (sconfEncDec) {
-        roundKey := kExp.io.expanded(roundCounter)
-      }.otherwise {
-        when (!sconfMode) {
-          roundKey := kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter - 1.U)
+      when (firstRound) {
+        roundIValid := true.B
+        firstRound := false.B
+        rBusy := true.B
+        when (sconfEncDec) {
+          roundKey := kExp.io.expanded(roundCounter)
         }.otherwise {
-          roundKey := kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter - 1.U)
+          when (!sconfMode) {
+            roundKey := kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter - 1.U)
+          }.otherwise {
+            roundKey := kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter - 1.U)
+          }
         }
-      }
-      when (sconfSingle) {
-        pendingRounds := 0.U
-      }.otherwise {
-        when (!sconfMode) {
-          pendingRounds := SIMON_64_128_ROUNDS.U
+        when (sconfSingle) {
+          pendingRounds := 0.U
         }.otherwise {
-          pendingRounds := SIMON_128_128_ROUNDS.U
+          when (!sconfMode) {
+            pendingRounds := SIMON_64_128_ROUNDS.U
+          }.otherwise {
+            pendingRounds := SIMON_128_128_ROUNDS.U
+          }
         }
-      }
       }
     }
   }
