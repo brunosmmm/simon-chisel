@@ -301,7 +301,7 @@ class SimonTooslyModule(outer: SimonToosly)
     memWr := false.B
   }
 
-  when (loadPending) {
+  when (loadPending && !storePending) {
     when (memCtl.io.ready) {
       memRd := true.B
       when (memRd && memCtl.io.rdValid) {
