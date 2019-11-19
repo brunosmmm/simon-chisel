@@ -143,6 +143,15 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
           roundCounter := roundCounter + 1.U
         }
       }
+      when (sconfEncDec) {
+        roundKey := kExp.io.expanded(roundCounter+1.U) // put next key out
+      }.otherwise {
+        when (!sconfMode) {
+          roundKey := kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter - 2.U)
+        }.otherwise {
+          roundKey := kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter - 2.U)
+        }
+      }
       when (pendingRounds === 0.U) {
         rBusy := false.B
         roundIValid := false.B
@@ -157,15 +166,6 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
         roundIValid := true.B
         firstRound := false.B
         rBusy := true.B
-        when (sconfEncDec) {
-          roundKey := kExp.io.expanded(roundCounter)
-        }.otherwise {
-          when (!sconfMode) {
-            roundKey := kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter - 1.U)
-          }.otherwise {
-            roundKey := kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter - 1.U)
-          }
-        }
         when (sconfSingle) {
           pendingRounds := 0.U
         }.otherwise {
