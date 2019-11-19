@@ -178,6 +178,7 @@ class SimonTooslyModule(outer: SimonToosly)
   val startAddr = RegInit(0.U(64.W))
   val startEncDec = RegInit(false.B)
   val memRdAck = RegInit(false.B)
+  val coreOutAck = RegInit(false.B)
 
   memCtl.io.addr := Mux(memWr, storeAddr, loadAddr)
   memCtl.io.wr := memWr
@@ -314,6 +315,12 @@ class SimonTooslyModule(outer: SimonToosly)
     memRdAck := true.B
   }.otherwise {
     memRdAck := false.B
+  }
+
+  when (core.io.dOutValid) {
+    coreOutAck := true.B
+  }.otherwise {
+    coreOutAck := false.B
   }
 
   when (loadPending && !storePending) {
