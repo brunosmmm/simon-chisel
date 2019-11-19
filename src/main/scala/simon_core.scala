@@ -166,9 +166,9 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
           pendingRounds := 0.U
         }.otherwise {
           when (!sconfMode) {
-            pendingRounds := SIMON_64_128_ROUNDS.U
+            pendingRounds := SIMON_64_128_ROUNDS.U - 1.U
           }.otherwise {
-            pendingRounds := SIMON_128_128_ROUNDS.U
+            pendingRounds := SIMON_128_128_ROUNDS.U - 1.U
           }
         }
       }
