@@ -3,9 +3,10 @@ package SimonAcc
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.tile._
-import freechips.rocketchip.config._
-import freechips.rocketchip.diplomacy._
-import testchipip._
+import freechips.rocketchip.subsystem.{BaseSubsystem, CacheBlockBytes}
+import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, IdRange}
+import testchipip.TLHelper
 
 class SimonToosly(opcodes: OpcodeSet)
     (implicit p: Parameters) extends LazyRoCC(opcodes) {
