@@ -58,22 +58,22 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
   // interface d receives response
   switch (state) {
     is (state_idle) {
-      when (wr && !rd && isReady) {
+      when (io.wr && !io.rd && isReady) {
         wrDone := false.B
         state := state_request_wr
         memRequest := edge.Put(
           fromSource = 0.U,
-          toAddress = addr,
+          toAddress = io.addr,
           lgSize = 3.U,
-          data = dataIn
+          data = io.dataIn
         )._2
       }
-      when (rd && !wr && isReady) {
+      when (io.rd && !io.wr && isReady) {
         rdDone := false.B
         state := state_request_rd
         memRequest := edge.Get(
           fromSource = 0.U,
-          toAddress = addr,
+          toAddress = io.addr,
           lgSize = 3.U
         )._2
       }
