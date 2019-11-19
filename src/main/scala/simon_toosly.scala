@@ -227,17 +227,25 @@ class SimonTooslyModule(outer: SimonToosly)
       is (FUNC_ENC.U) {
         coreEncDec := true.B
         startAddr := io.cmd.bits.rs1
-        pendingWordCount := io.cmd.bits.rs2
-        startEncDec := true.B
-        loadPending := true.B
+        when (io.cmd.bits.rs2 === 0.U) {
+          // exception?
+        }.otherwise {
+          pendingWordCount := io.cmd.bits.rs2 - 1.U
+          startEncDec := true.B
+          loadPending := true.B
+        }
         loadAddr := io.cmd.bits.rs1
       }
       is (FUNC_DEC.U) {
         coreEncDec := false.B
         startAddr := io.cmd.bits.rs1
-        pendingWordCount := io.cmd.bits.rs2
-        startEncDec := true.B
-        loadPending := true.B
+        when (io.cmd.bits.rs2 === 0.U) {
+          // exception?
+        }.otherwise {
+          pendingWordCount := io.cmd.bits.rs2 - 1.U
+          startEncDec := true.B
+          loadPending := true.B
+        }
         loadAddr := io.cmd.bits.rs1
       }
     }
