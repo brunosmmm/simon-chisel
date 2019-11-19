@@ -5,7 +5,7 @@ import chisel3.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
-import testchipip.TLHelper
+import testchipip._
 
 class SimonToosly(opcodes: OpcodeSet)
     (implicit p: Parameters) extends LazyRoCC(opcodes) {
