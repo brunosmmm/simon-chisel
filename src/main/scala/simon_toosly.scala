@@ -39,7 +39,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
   val state = RegInit(state_idle)
 
   val isReady = Wire(Bool())
-  isReady := state === state_idle
+  io.ready := state === state_idle && mem.a.ready
 
   val memRequest = RegInit(0.U(64.W))
   mem.a.valid := (state === state_request_rd) || (state === state_request_wr)
@@ -58,7 +58,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
   // interface d receives response
   switch (state) {
     is (state_idle) {
-      when (io.wr && !io.rd && isReady) {
+      when (io.wr && !io.rd && mem.a.ready) {
         wrDone := false.B
         state := state_request_wr
         memRequest := edge.Put(
@@ -68,7 +68,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
           data = io.dataIn
         )._2
       }
-      when (io.rd && !io.wr && isReady) {
+      when (io.rd && !io.wr && mem.a.ready) {
         rdDone := false.B
         state := state_request_rd
         memRequest := edge.Get(
