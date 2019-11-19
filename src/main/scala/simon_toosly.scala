@@ -41,7 +41,6 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
   val isReady = Wire(Bool())
   io.ready := state === state_idle && mem.a.ready
 
-  val memRequest = TLBundleA()
   mem.a.valid := (state === state_request_rd) || (state === state_request_wr)
   mem.d.ready := (state === state_response_rd) || (state === state_response_wr)
 
@@ -61,7 +60,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
       when (io.wr && !io.rd && mem.a.ready) {
         wrDone := false.B
         state := state_request_wr
-        memRequest := edge.Put(
+        mem.a.bits := edge.Put(
           fromSource = 0.U,
           toAddress = io.addr,
           lgSize = 3.U,
@@ -71,7 +70,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
       when (io.rd && !io.wr && mem.a.ready) {
         rdDone := false.B
         state := state_request_rd
-        memRequest := edge.Get(
+        mem.a.bits := edge.Get(
           fromSource = 0.U,
           toAddress = io.addr,
           lgSize = 3.U
