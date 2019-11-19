@@ -124,6 +124,8 @@ class SimonTooslyModule(outer: SimonToosly)
   private val FUNC_INIT = 0
   private val FUNC_ENC = 1
   private val FUNC_DEC = 2
+  private val FUNC_CLOAD = 3
+  private val FUNC_CSTOR = 4
 
   private val SIMON_FUNCT_MODE_OFFSET = 0
   private val SIMON_FUNCT_OP_OFFSET = 2
@@ -179,6 +181,7 @@ class SimonTooslyModule(outer: SimonToosly)
   val startEncDec = RegInit(false.B)
   val memRdAck = RegInit(false.B)
   val coreOutAck = RegInit(false.B)
+  val dontStore = RegInit(false.B)
 
   memCtl.io.addr := Mux(memWr, storeAddr, loadAddr)
   memCtl.io.wr := memWr
@@ -217,6 +220,7 @@ class SimonTooslyModule(outer: SimonToosly)
   when (io.cmd.fire()) {
     wantsResponse := io.cmd.bits.inst.xd
     responseDest := io.cmd.bits.inst.rd
+    dontStore := false.B
     switch (operation) {
       is (FUNC_INIT.U) {
         // initialize
@@ -248,6 +252,24 @@ class SimonTooslyModule(outer: SimonToosly)
           startEncDec := true.B
           loadPending := true.B
         }
+        loadAddr := io.cmd.bits.rs1
+      }
+      is (FUNC_CLOAD.U) {
+        coreEncDec := false.B
+        startAddr := io.cmd.bits.rs1
+        pendingWordCount := 0.U
+        startEncDec := true.B
+        loadPending := true.B
+        loadAddr := io.cmd.bits.rs1
+        dontStore := true.B
+      }
+      is (FUNC_CSTOR.U) {
+        coreEncDec = true.B
+        startAddr := io.cmd.bits.rs1
+        pendingWordCount := 0.U
+        coreData1 := io.cmd.bits.rs2(31, 0)
+        coreData2 := io.cmd.bits.rs2(63, 32)
+        startEncDec := true.B
         loadAddr := io.cmd.bits.rs1
       }
     }
@@ -285,11 +307,15 @@ class SimonTooslyModule(outer: SimonToosly)
         }
       }
       // store to memory pending
-      storePending := true.B
-      // store to same address
-      storeAddr := loadAddr
-      storeWord := Cat(core.io.data2Out(31, 0), core.io.data1Out(31, 0))
-      respData := 0.U
+      when (!dontStore) {
+        storePending := true.B
+        // store to same address
+        storeAddr := loadAddr
+        storeWord := Cat(core.io.data2Out(31, 0), core.io.data1Out(31, 0))
+        respData := 0.U
+      }.otherwise {
+        respData := Cat(core.io.data2Out(31,0), core.io.data1Out(31, 0))
+      }
     }
   }
 
