@@ -86,7 +86,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
     is (state_response_rd) {
       when (mem.d.fire()) {
         rdDone := true.B
-        readData := mem.d.bits
+        readData := mem.d.bits.data
         state := state_idle
       }
     }
