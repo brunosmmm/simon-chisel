@@ -10,9 +10,20 @@ import testchipip.TLHelper
 class SimonToosly(opcodes: OpcodeSet)
     (implicit p: Parameters) extends LazyRoCC(opcodes) {
   override lazy val module = new SimonTooslyModule(this)
+  val memCtl = LazyModule(new SimonTooslyMemModule)
+  tlNode := memCtl.node
+}
 
+class SimonTooslyMemModule(implicit p: Parameters) extends LazyModule {
+  lazy val module = new SimonTooslyMemModuleImp(this)
   val node = TLHelper.makeClientNode(
     name = "simon-toosly", sourceId = IdRange(0, 1))
+}
+
+class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameters) extends LazyModuleImp(outer)
+    with HasCoreParameters {
+
+  val (mem, edge) = outer.node.out(0)
 }
 
 class SimonTooslyModule(outer: SimonToosly)
@@ -31,8 +42,8 @@ class SimonTooslyModule(outer: SimonToosly)
   // rs2 - the value of source register 2
   val core = Module(new SimonCore(64, 128))
 
-  // memory access port
-  val (mem, edge) = outer.node.out(0)
+  // memory controller
+  val memCtl = outer.memCtl.module
 
   // custom functions
   private val FUNC_INIT = 0
