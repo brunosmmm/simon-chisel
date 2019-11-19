@@ -182,7 +182,7 @@ class SimonTooslyModule(outer: SimonToosly)
   }
 
   when (startEncDec) {
-    when (pendingWordCount === 0 && !loadPending && !storePending && !rBusy) {
+    when (pendingWordCount === 0.U && !loadPending && !storePending && !rBusy) {
       startEncDec := false.B
     }
   }
@@ -227,7 +227,7 @@ class SimonTooslyModule(outer: SimonToosly)
       memWr := true.B
 
       // prepare next load
-      when (pendingWordCount > 0) {
+      when (pendingWordCount > 0.U) {
         loadPending := true.B
         loadAddr := loadAddr + 1.U
         pendingWordCount := pendingWordCount - 1.U
