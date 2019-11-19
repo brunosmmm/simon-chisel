@@ -61,7 +61,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   val rStart = RegInit(false.B)
   val pendingRounds = RegInit(0.U(68.W))
   val roundCounter = RegInit(0.U(68.W))
-  val roundKey = RegInit(0.U(64.W))
+  val roundKey = Wire(64.W)
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
   val firstRound = RegInit(true.B)
@@ -125,6 +125,11 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
     roundIValid := false.B
   }
 
+  roundKey := Mux(sconfEncDec, kExp.io.expanded(roundCounter),
+                  Mux(sconfMode,
+                      kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter - 1.U),
+                      kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter - 1.U)))
+
   // perform round computations
   when (rStart) {
     when (sRound.io.oValid) {
@@ -141,15 +146,6 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
           roundCounter := 0.U
         }.otherwise {
           roundCounter := roundCounter + 1.U
-        }
-      }
-      when (sconfEncDec) {
-        roundKey := kExp.io.expanded(roundCounter+1.U) // put next key out
-      }.otherwise {
-        when (!sconfMode) {
-          roundKey := kExp.io.expanded(SIMON_64_128_ROUNDS.U - roundCounter - 2.U)
-        }.otherwise {
-          roundKey := kExp.io.expanded(SIMON_128_128_ROUNDS.U - roundCounter - 2.U)
         }
       }
       when (pendingRounds === 0.U) {
