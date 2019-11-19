@@ -130,24 +130,24 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
     when (sRound.io.oValid) {
       dataReg1 := sRound.io.block1Out
       dataReg2 := sRound.io.block2Out
+      when (!sconfMode) {
+        when (roundCounter === (SIMON_64_128_ROUNDS - 1).U) {
+          roundCounter := 0.U
+        }.otherwise {
+          roundCounter := roundCounter + 1.U
+        }
+      }.otherwise {
+        when (roundCounter === (SIMON_128_128_ROUNDS - 1).U) {
+          roundCounter := 0.U
+        }.otherwise {
+          roundCounter := roundCounter + 1.U
+        }
+      }
       when (pendingRounds === 0.U) {
         rBusy := false.B
         roundIValid := false.B
         rStart := false.B
         firstRound := true.B
-        when (!sconfMode) {
-          when (roundCounter === (SIMON_64_128_ROUNDS - 1).U) {
-            roundCounter := 0.U
-          }.otherwise {
-            roundCounter := roundCounter + 1.U
-          }
-        }.otherwise {
-          when (roundCounter === (SIMON_128_128_ROUNDS - 1).U) {
-            roundCounter := 0.U
-          }.otherwise {
-            roundCounter := roundCounter + 1.U
-          }
-        }
       }.otherwise {
         pendingRounds := pendingRounds - 1.U
         roundIValid := true.B
