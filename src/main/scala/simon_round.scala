@@ -96,6 +96,7 @@ class SimonRound(maxWordWidth: Int) extends Module {
   when (io.iValid && !busy) {
     isReady := false.B
     busy := true.B
+    isValid := false.B
     encDecMode := io.encDec
     simonMode := io.mode
     tmp := io.roundKey ^ yIn
