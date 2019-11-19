@@ -41,7 +41,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
   val isReady = Wire(Bool())
   io.ready := state === state_idle && mem.a.ready
 
-  val memRequest = RegInit(0.U(64.W))
+  val memRequest = TLBundleA()
   mem.a.valid := (state === state_request_rd) || (state === state_request_wr)
   mem.d.ready := (state === state_response_rd) || (state === state_response_wr)
 
