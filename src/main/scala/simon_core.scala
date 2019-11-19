@@ -61,7 +61,7 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   val rStart = RegInit(false.B)
   val pendingRounds = RegInit(0.U(68.W))
   val roundCounter = RegInit(0.U(68.W))
-  val roundKey = Wire(64.W)
+  val roundKey = Wire(UInt(64.W))
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
   val firstRound = RegInit(true.B)
