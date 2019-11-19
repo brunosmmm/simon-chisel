@@ -27,7 +27,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
       val wr = Input(Bool())
       val rd = Input(Bool())
       val rdValid = Output(Bool())
-      val ready = Ouput(Bool())
+      val ready = Output(Bool())
       val addr = Input(UInt(64.W))
       val dataIn = Input(UInt(64.W))
       val dataOut = Output(UInt(64.W))
@@ -233,6 +233,10 @@ class SimonTooslyModule(outer: SimonToosly)
         pendingWordCount := pendingWordCount - 1.U
       }
     }
+  }
+
+  when (memWr) {
+    memWr := false
   }
 
   when (loadPending) {
