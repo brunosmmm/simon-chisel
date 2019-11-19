@@ -274,7 +274,7 @@ class SimonTooslyModule(outer: SimonToosly)
   }
 
   when (rBusy) {
-    when (core.io.dOutValid) {
+    when (core.io.dOutValid && !coreOutAck) {
       rBusy := false.B
       wantsResponse := false.B
       when (wantsResponse && io.resp.ready) {
