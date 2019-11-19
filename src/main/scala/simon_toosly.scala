@@ -236,7 +236,7 @@ class SimonTooslyModule(outer: SimonToosly)
   }
 
   when (memWr) {
-    memWr := false
+    memWr := false.B
   }
 
   when (loadPending) {
