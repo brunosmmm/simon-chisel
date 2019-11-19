@@ -177,6 +177,7 @@ class SimonTooslyModule(outer: SimonToosly)
   val pendingWordCount = RegInit(0.U(64.W))
   val startAddr = RegInit(0.U(64.W))
   val startEncDec = RegInit(false.B)
+  val memRdAck = RegInit(false.B)
 
   memCtl.io.addr := Mux(memWr, storeAddr, loadAddr)
   memCtl.io.wr := memWr
@@ -309,10 +310,16 @@ class SimonTooslyModule(outer: SimonToosly)
     memWr := false.B
   }
 
+  when (memCtl.io.rdValid) {
+    memRdAck := true.B
+  }.otherwise {
+    memRdAck := false.B
+  }
+
   when (loadPending && !storePending) {
     when (memCtl.io.ready) {
       memRd := true.B
-      when (memRd && memCtl.io.rdValid) {
+      when (memRd && memCtl.io.rdValid && !memRdAck) {
         // read done
         memRd := false.B
         coreData1 := memCtl.io.dataOut(31, 0)
