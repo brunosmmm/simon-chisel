@@ -27,6 +27,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
       val wr = Input(Bool())
       val rd = Input(Bool())
       val rdValid = Output(Bool())
+      val wrDone = Output(Bool())
       val ready = Output(Bool())
       val addr = Input(UInt(64.W))
       val dataIn = Input(UInt(64.W))
@@ -34,6 +35,69 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
     })
 
   val (mem, edge) = outer.node.out(0)
+  val state_idle :: state_request_rd :: state_request_wr :: state_response_rd :: state_response_wr :: Nil = Enum(5)
+  val state = RegInit(state_idle)
+
+  val isReady = Wire(Bool())
+  isReady := state === state_idle
+
+  val memRequest = RegInit(0.U(64.W))
+  mem.a.valid := (state === state_request_rd) || (state === state_request_wr)
+  mem.d.ready := (state === state_response_rd) || (state === state_response_wr)
+
+  val rdDone = RegInit(false.B)
+  io.rdValid := rdDone
+
+  val wrDone = RegInit(false.B)
+  io.wrDone := wrDone
+
+  val readData = RegInit(0.U(64.W))
+  io.dataOut := readData
+
+  // interface a sends requests
+  // interface d receives response
+  switch (state) {
+    is (state_idle) {
+      when (wr && !rd && isReady) {
+        wrDone := false.B
+        state := state_request_wr
+        memRequest := edge.Put(
+          fromSource = 0.U,
+          toAddress = addr,
+          lgSize = 3.U,
+          data = dataIn
+        )._2
+      }
+      when (rd && !wr && isReady) {
+        rdDone := false.B
+        state := state_request_rd
+        memRequest := edge.Get(
+          fromSource = 0.U,
+          toAddress = addr,
+          lgSize = 3.U
+        )._2
+      }
+    }
+    is (state_request_rd) {
+      state := state_response_rd
+    }
+    is (state_request_wr) {
+      state := state_response_wr
+    }
+    is (state_response_rd) {
+      when (mem.d.fire()) {
+        rdDone := true.B
+        readData := mem.d.bits
+        state := state_idle
+      }
+    }
+    is (state_response_wr) {
+      when (edge.done(mem.a)) {
+        state := state_idle
+        wrDone := true.B
+      }
+    }
+  }
 }
 
 class SimonTooslyModule(outer: SimonToosly)
