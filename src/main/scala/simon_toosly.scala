@@ -130,7 +130,7 @@ class SimonTooslyModule(outer: SimonToosly)
   private val SIMON_FUNCT_MODE_OFFSET = 0
   private val SIMON_FUNCT_OP_OFFSET = 2
   private val SIMON_FUNCT_MODE_MASK = 0x3
-  private val SIMON_FUNCT_OP_MASK = 0xC
+  private val SIMON_FUNCT_OP_MASK = 0x1C
   private val SIMON_64_128_ROUNDS = 44
   private val SIMON_128_128_ROUNDS = 68
 
