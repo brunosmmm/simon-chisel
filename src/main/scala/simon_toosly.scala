@@ -10,7 +10,7 @@ import freechips.rocketchip.tilelink._
 // TODO fix imports
 
 class SimonToosly(opcodes: OpcodeSet)
-    (implicit p: Parameters) extends LazyRoCC(opcodes) {
+    (implicit p: Parameters) extends LazyRoCC(opcodes=opcodes, nPTWports=0) {
   override lazy val module = new SimonTooslyModule(this)
   val memCtl = LazyModule(new SimonTooslyMemModule)
   tlNode := memCtl.node
