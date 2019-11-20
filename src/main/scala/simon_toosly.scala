@@ -7,6 +7,7 @@ import freechips.rocketchip.subsystem.{BaseSubsystem, CacheBlockBytes}
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
+// TODO fix imports
 
 class SimonToosly(opcodes: OpcodeSet)
     (implicit p: Parameters) extends LazyRoCC(opcodes) {
@@ -15,112 +16,18 @@ class SimonToosly(opcodes: OpcodeSet)
   tlNode := memCtl.node
 }
 
-class SimonTooslyMemModule(implicit p: Parameters) extends LazyModule {
-  lazy val module = new SimonTooslyMemModuleImp(this)
-  val node = TLClientNode(Seq(TLClientPortParameters(Seq(TLClientParameters("simon-toosly")))))
-}
-
-class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameters) extends LazyModuleImp(outer)
-    with HasCoreParameters {
-  val io = IO(new Bundle
-    {
-      val wr = Input(Bool())
-      val rd = Input(Bool())
-      val rdValid = Output(Bool())
-      val wrDone = Output(Bool())
-      val ready = Output(Bool())
-      val addr = Input(UInt(64.W))
-      val dataIn = Input(UInt(64.W))
-      val dataOut = Output(UInt(64.W))
-    })
-
-  val (mem, edge) = outer.node.out(0)
-  val state_idle :: state_request_rd :: state_request_wr :: state_response_rd :: state_response_wr :: Nil = Enum(5)
-  val state = RegInit(state_idle)
-
-  io.ready := state === state_idle && mem.a.ready
-
-  mem.a.valid := (state === state_request_rd) || (state === state_request_wr)
-  mem.d.ready := (state === state_response_rd) || (state === state_response_wr)
-
-  val rdDone = RegInit(false.B)
-  io.rdValid := rdDone
-
-  val wrDone = RegInit(false.B)
-  io.wrDone := wrDone
-
-  val readData = RegInit(0.U(64.W))
-  io.dataOut := readData
-
-  // interface a sends requests
-  // interface d receives response
-  switch (state) {
-    is (state_idle) {
-      when (io.wr && !io.rd && mem.a.ready) {
-        wrDone := false.B
-        state := state_request_wr
-        mem.a.bits := edge.Put(
-          fromSource = 0.U,
-          toAddress = io.addr,
-          lgSize = 3.U,
-          data = io.dataIn
-        )._2
-      }
-      when (io.rd && !io.wr && mem.a.ready) {
-        rdDone := false.B
-        state := state_request_rd
-        mem.a.bits := edge.Get(
-          fromSource = 0.U,
-          toAddress = io.addr,
-          lgSize = 3.U
-        )._2
-      }
-    }
-    is (state_request_rd) {
-      state := state_response_rd
-    }
-    is (state_request_wr) {
-      state := state_response_wr
-    }
-    is (state_response_rd) {
-      when (mem.d.fire()) {
-        rdDone := true.B
-        readData := mem.d.bits.data
-        state := state_idle
-      }
-    }
-    is (state_response_wr) {
-      when (mem.d.fire()) {
-        state := state_idle
-        wrDone := true.B
-      }
-    }
-  }
-}
-
 class SimonTooslyModule(outer: SimonToosly)
     extends LazyRoCCModuleImp(outer) {
-  // The parts of the command are as follows
-  // inst - the parts of the instruction itself
-  //   opcode
-  //   rd - destination register number
-  //   rs1 - first source register number
-  //   rs2 - second source register number
-  //   funct
-  //   xd - is the destination register being used?
-  //   xs1 - is the first source register being used?
-  //   xs2 - is the second source register being used?
-  // rs1 - the value of source register 1
-  // rs2 - the value of source register 2
+  // simon core
   val core = Module(new SimonCore(64, 128))
-
   // memory controller
   val memCtl = outer.memCtl.module
 
   val memWr = RegInit(false.B)
   val memRd = RegInit(false.B)
 
-  // custom functions
+  // custom values
+  // FIXME how to put common values in package in scala?
   private val FUNC_INIT = 0
   private val FUNC_ENC = 1
   private val FUNC_DEC = 2
@@ -223,7 +130,7 @@ class SimonTooslyModule(outer: SimonToosly)
     dontStore := false.B
     switch (operation) {
       is (FUNC_INIT.U) {
-        // initialize
+        // initialize & perform key expansion
         coreKeyH := io.cmd.bits.rs2
         coreKeyL := io.cmd.bits.rs1
         coreKeyValid := true.B
@@ -231,6 +138,7 @@ class SimonTooslyModule(outer: SimonToosly)
         respData := 0.U
       }
       is (FUNC_ENC.U) {
+        // encrypt a memory region
         coreEncDec := true.B
         startAddr := io.cmd.bits.rs1
         when (io.cmd.bits.rs2 === 0.U) {
@@ -243,6 +151,7 @@ class SimonTooslyModule(outer: SimonToosly)
         loadAddr := io.cmd.bits.rs1
       }
       is (FUNC_DEC.U) {
+        // decrypt a memory region
         coreEncDec := false.B
         startAddr := io.cmd.bits.rs1
         when (io.cmd.bits.rs2 === 0.U) {
@@ -255,15 +164,18 @@ class SimonTooslyModule(outer: SimonToosly)
         loadAddr := io.cmd.bits.rs1
       }
       is (FUNC_CLOAD.U) {
+        // load and decrypt from memory
         coreEncDec := false.B
         startAddr := io.cmd.bits.rs1
         pendingWordCount := 0.U
         startEncDec := true.B
         loadPending := true.B
         loadAddr := io.cmd.bits.rs1
+        // prevent store mechanism from starting up automatically
         dontStore := true.B
       }
       is (FUNC_CSTOR.U) {
+        // encrypt & store to memory
         coreEncDec := true.B
         startAddr := io.cmd.bits.rs1
         pendingWordCount := 0.U
@@ -271,18 +183,21 @@ class SimonTooslyModule(outer: SimonToosly)
         coreData2 := io.cmd.bits.rs2(63, 32)
         startEncDec := true.B
         loadAddr := io.cmd.bits.rs1
+        // start immediately
         coreDataValid := true.B
         rBusy := true.B
       }
     }
   }
 
+  // automatically deassert start flag
   when (startEncDec) {
     when (pendingWordCount === 0.U && !loadPending && !storePending && !rBusy) {
       startEncDec := false.B
     }
   }
 
+  // detect key expansion end and flag as ready
   when (kBusy) {
     when (core.io.kExpDone) {
       kBusy := false.B
@@ -297,6 +212,7 @@ class SimonTooslyModule(outer: SimonToosly)
     }
   }
 
+  // detect encryption/decryption rounds end and perform store to memory if necessary
   when (rBusy) {
     when (core.io.dOutValid && !coreOutAck) {
       rBusy := false.B
@@ -321,12 +237,13 @@ class SimonTooslyModule(outer: SimonToosly)
     }
   }
 
+  // perform actual store
   when (storePending) {
     when (memCtl.io.ready) {
       storePending := false.B
       memWr := true.B
 
-      // prepare next load
+      // prepare next load automatically if needed
       when (pendingWordCount > 0.U) {
         loadPending := true.B
         loadAddr := loadAddr + 1.U
@@ -335,6 +252,7 @@ class SimonTooslyModule(outer: SimonToosly)
     }
   }
 
+  // deassert memory controller signals
   when (memWr) {
     memWr := false.B
   }
@@ -343,6 +261,7 @@ class SimonTooslyModule(outer: SimonToosly)
     memRd := false.B
   }
 
+  // manage double handshake flags for memory controller
   when (memCtl.io.rdValid) {
     memRdAck := true.B
   }.otherwise {
@@ -355,6 +274,7 @@ class SimonTooslyModule(outer: SimonToosly)
     coreOutAck := false.B
   }
 
+  // manage memory load mechanism
   when (loadPending && !storePending) {
     when (memCtl.io.ready) {
       memRd := true.B
