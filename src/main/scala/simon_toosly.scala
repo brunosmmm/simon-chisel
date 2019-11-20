@@ -264,7 +264,7 @@ class SimonTooslyModule(outer: SimonToosly)
         dontStore := true.B
       }
       is (FUNC_CSTOR.U) {
-        coreEncDec = true.B
+        coreEncDec := true.B
         startAddr := io.cmd.bits.rs1
         pendingWordCount := 0.U
         coreData1 := io.cmd.bits.rs2(31, 0)
