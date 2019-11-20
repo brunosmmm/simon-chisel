@@ -271,6 +271,8 @@ class SimonTooslyModule(outer: SimonToosly)
         coreData2 := io.cmd.bits.rs2(63, 32)
         startEncDec := true.B
         loadAddr := io.cmd.bits.rs1
+        coreDataValid := true.B
+        rbusy := true.B
       }
     }
   }
