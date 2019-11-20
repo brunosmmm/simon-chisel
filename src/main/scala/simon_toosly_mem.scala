@@ -7,6 +7,7 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.subsystem.{BaseSubsystem, CacheBlockBytes}
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.rocket.{TLBPTWIO}
 import freechips.rocketchip.tilelink._
 
 class SimonTooslyMemModule(implicit p: Parameters) extends LazyModule {
@@ -27,6 +28,7 @@ class SimonTooslyMemModuleImp(outer: SimonTooslyMemModule)(implicit p: Parameter
       val addr = Input(UInt(64.W))
       val dataIn = Input(UInt(64.W))
       val dataOut = Output(UInt(64.W))
+      val ptw = new TLBPTWIO
     })
 
   val (mem, edge) = outer.node.out(0)
