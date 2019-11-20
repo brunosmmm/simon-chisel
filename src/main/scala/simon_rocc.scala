@@ -73,6 +73,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   val wantsResponse = RegInit(false.B)
   val responseDest = RegInit(0.U(5.W))
   val lastOperation = RegInit(0.U(2.W))
+  val coreOutAck = RegInit(false.B)
   stallResponse := io.cmd.bits.inst.xd && !io.resp.ready
 
   // auto clear
@@ -93,6 +94,12 @@ class SimonRoCCModule(outer: SimonRoCC)
       responseValid := true.B
       responsePending := false.B
     }
+  }
+
+  when (core.io.dOutValid) {
+    coreOutAck := true.B
+  }.otherwise {
+    coreOutAck := false.B
   }
 
   // other
@@ -166,7 +173,7 @@ class SimonRoCCModule(outer: SimonRoCC)
   }
 
   when (rBusy) {
-    when (core.io.dOutValid) {
+    when (core.io.dOutValid && !coreOutAck) {
       rBusy := false.B
       wantsResponse := false.B
       when (wantsResponse && io.resp.ready) {
