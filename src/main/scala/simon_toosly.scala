@@ -22,7 +22,7 @@ class SimonTooslyModule(outer: SimonToosly)
   val core = Module(new SimonCore(64, 128))
   // memory controller
   val memCtl = outer.memCtl.module
-  io.ptw.head <> memCtl.io.ptw
+  io.mem.valid := false.B
 
   val memWr = RegInit(false.B)
   val memRd = RegInit(false.B)

@@ -7,7 +7,7 @@ import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 
 class SimonRoCC(opcodes: OpcodeSet)
-    (implicit p: Parameters) extends LazyRoCC(opcodes) {
+    (implicit p: Parameters) extends LazyRoCC(opcodes, nPTWPorts=1) {
   override lazy val module = new SimonRoCCModule(this)
 }
 
