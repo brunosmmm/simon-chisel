@@ -25,7 +25,8 @@ trait SimonModule extends HasRegMap {
   private val REG_DATA1 = 0x18
   private val REG_DATA2 = 0x20
 
-  val SIMON_ID = UInt(new BigInt("0x53494d4f4e313238"))
+  val SIMON_ID_1 = 0x53494d4f
+  val SIMON_ID_2 = 0x4e313238
 
   val regKeyH = Reg(UInt(64.W))
   val regKeyL = Reg(UInt(64.W))
@@ -119,7 +120,7 @@ trait SimonModule extends HasRegMap {
   }
 
   def readID(ready: Bool): (Bool, UInt) = {
-    (true.B, SIMON_ID)
+    (true.B, Cat(SIMON_ID_1.U, SIMON_ID_2.U))
   }
 
   regmap(
@@ -128,7 +129,7 @@ trait SimonModule extends HasRegMap {
     0x10 -> Seq(RegField(64, readKey(_), writeKeyH(_,_))),
     0x18 -> Seq(RegField(64, readData1(_), writeData1(_,_))),
     0x20 -> Seq(RegField(64, readData2(_), writeData2(_,_))),
-    0x28 -> Seq(RegField(64, readID(_)))
+    0x28 -> Seq(RegField(64, readID))
   )
 }
 
