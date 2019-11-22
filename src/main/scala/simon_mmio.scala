@@ -120,7 +120,7 @@ trait SimonModule extends HasRegMap {
   }
 
   def readID(ready: Bool): (Bool, UInt) = {
-    (true.B, Cat(SIMON_ID_1.U, SIMON_ID_2.U))
+    (true.B, Cat(SIMON_ID_1.U(32.W), SIMON_ID_2.U(32.W)))
   }
 
   def ignoreWrite(valid: Bool, bits: UInt): Bool = {
