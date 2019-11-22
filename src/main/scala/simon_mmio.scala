@@ -25,7 +25,7 @@ trait SimonModule extends HasRegMap {
   private val REG_DATA1 = 0x18
   private val REG_DATA2 = 0x20
 
-  val SIMON_ID = UInt(0x53494d4f4e313238)
+  val SIMON_ID = UInt(new BigInteger("53494d4f4e313238", 16))
 
   val regKeyH = Reg(UInt(64.W))
   val regKeyL = Reg(UInt(64.W))
