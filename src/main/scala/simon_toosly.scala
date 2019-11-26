@@ -275,7 +275,7 @@ class SimonTooslyModule(outer: SimonToosly)
   }
 
   // manage memory load mechanism
-  when (loadPending && !storePending) {
+  when (loadPending && !storePending && !memWr) {
     when (memCtl.io.ready) {
       memRd := true.B
       when (memCtl.io.rdValid && !memRdAck) {
