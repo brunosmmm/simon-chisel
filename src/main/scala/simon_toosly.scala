@@ -247,7 +247,7 @@ class SimonTooslyModule(outer: SimonToosly)
       // prepare next load automatically if needed
       when (pendingWordCount > 0.U) {
         loadPending := true.B
-        loadAddr := loadAddr + 1.U
+        loadAddr := loadAddr + 8.U
         pendingWordCount := pendingWordCount - 1.U
       }
     }
