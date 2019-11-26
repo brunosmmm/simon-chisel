@@ -89,8 +89,9 @@ class SimonTooslyModule(outer: SimonToosly)
   val memRdAck = RegInit(false.B)
   val coreOutAck = RegInit(false.B)
   val dontStore = RegInit(false.B)
+  val lastMemAddr = RegNext(Mux(memWr, storeAddr, loadAddr))
 
-  memCtl.io.addr := Mux(memWr, storeAddr, loadAddr)
+  memCtl.io.addr := lastMemAddr
   memCtl.io.wr := memWr
   memCtl.io.rd := memRd
   memCtl.io.dataIn := storeWord
