@@ -3,7 +3,7 @@ package SimonAcc
 import chisel3._
 import chisel3.util._
 
-class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends Module {
+class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int, enable128_128: Boolean = false) extends Module {
   val io = IO(
     new Bundle {
       val mode = Input(Bool())
@@ -18,22 +18,44 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   val SIMON_64_128_ROUNDS = 44
   val SIMON_64_128_WORD_SIZE = 32
   val SIMON_64_128_KEY_WORDS = 4
-  val SIMON_128_128_ROUNDS = 68
-  val SIMON_128_128_WORD_SIZE = 64
-  val SIMON_128_128_KEY_WORDS = 2
   val Z_64_128 = "b0011110000101100111001010001001000000111101001100011010111011011".U(64.W)
-  val Z_128_128 = "b0011001101101001111110001000010100011001001011000000111011110101".U(64.W)
+
+  // expanded round keys
+  val xKey = RegInit(VecInit(Seq.fill(maxRounds)(0.U(maxWordWidth.W)))) // awful
+  io.expanded := xKey
+
+  // pending round key expansion
+  val kexpPending = RegInit(0.U(16.W))
+
+  if (enable128_128) {
+    val Z_128_128 = "b0011001101101001111110001000010100011001001011000000111011110101".U(64.W)
+    val SIMON_128_128_ROUNDS = 68
+    val SIMON_128_128_WORD_SIZE = 64
+    val SIMON_128_128_KEY_WORDS = 2
+
+    val rr1_128in = RegInit(0.asUInt(SIMON_128_128_WORD_SIZE.W))
+    val rr1_128out = Wire(UInt(SIMON_128_128_WORD_SIZE.W))
+    val rr3_128in = RegInit(0.asUInt(SIMON_128_128_WORD_SIZE.W))
+    val rr3_128out = Wire(UInt(SIMON_128_128_WORD_SIZE.W))
+
+    val rr_1_128 = Module(new RotateRight(SIMON_128_128_WORD_SIZE, 1))
+    rr_1_128.io.i_value := rr1_128in
+    rr1_128out := rr_1_128.io.o_value
+
+    val rr_3_128 = Module(new RotateRight(SIMON_128_128_WORD_SIZE, 3))
+    rr_3_128.io.i_value := rr3_128in
+    rr3_128out := rr_3_128.io.o_value
+
+    val xKey128Value = Wire(UInt(maxWordWidth.W))
+    xKey128Value := ~xKey(SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U) ^ rr1_128out ^ rr1_128in ^
+      Cat(0.U(63.W), Z_128_128((SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U)%62.U)) ^ 3.U
+  }
 
   // connections to rotate units
   val rr1_64in = RegInit(0.asUInt(SIMON_64_128_WORD_SIZE.W))
   val rr1_64out = Wire(UInt(SIMON_64_128_WORD_SIZE.W))
   val rr3_64in = RegInit(0.asUInt(SIMON_64_128_WORD_SIZE.W))
   val rr3_64out = Wire(UInt(SIMON_64_128_WORD_SIZE.W))
-
-  val rr1_128in = RegInit(0.asUInt(SIMON_128_128_WORD_SIZE.W))
-  val rr1_128out = Wire(UInt(SIMON_128_128_WORD_SIZE.W))
-  val rr3_128in = RegInit(0.asUInt(SIMON_128_128_WORD_SIZE.W))
-  val rr3_128out = Wire(UInt(SIMON_128_128_WORD_SIZE.W))
 
   val rr_1_64 = Module(new RotateRight(SIMON_64_128_WORD_SIZE, 1))
   rr_1_64.io.i_value := rr1_64in
@@ -43,27 +65,12 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
   rr_3_64.io.i_value := rr3_64in
   rr3_64out := rr_3_64.io.o_value
 
-  val rr_1_128 = Module(new RotateRight(SIMON_128_128_WORD_SIZE, 1))
-  rr_1_128.io.i_value := rr1_128in
-  rr1_128out := rr_1_128.io.o_value
-
-  val rr_3_128 = Module(new RotateRight(SIMON_128_128_WORD_SIZE, 3))
-  rr_3_128.io.i_value := rr3_128in
-  rr3_128out := rr_3_128.io.o_value
-
   // states
   val kexpIdle ::  kexpExp1 :: kexpExp2 :: kexpDone :: Nil = Enum(4)
   val kexpState = RegInit(kexpIdle)
 
-  // pending round key expansion
-  val kexpPending = RegInit(0.U(16.W))
-
   // mode
   val kexpMode = RegInit(false.B)
-
-  // expanded round keys
-  val xKey = RegInit(VecInit(Seq.fill(maxRounds)(0.U(maxWordWidth.W)))) // awful
-  io.expanded := xKey
 
   // generate outputs
   io.expValid := (kexpState === kexpDone)
@@ -71,20 +78,21 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
 
   // asynchronously calculate values
   val xKey64Value = Wire(UInt(maxWordWidth.W))
-  val xKey128Value = Wire(UInt(maxWordWidth.W))
   xKey64Value := Cat(0.U(32.W), ~xKey(SIMON_64_128_ROUNDS.U-kexpPending-SIMON_64_128_KEY_WORDS.U)(31, 0) ^ rr1_64out
                        ^ rr1_64in ^ Cat(0.U(31.W),
                                         Z_64_128((SIMON_64_128_ROUNDS.U-kexpPending-SIMON_64_128_KEY_WORDS.U)%62.U))
                        ^ 3.U)
-  xKey128Value := ~xKey(SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U) ^ rr1_128out ^ rr1_128in ^
-                        Cat(0.U(63.W), Z_128_128((SIMON_128_128_ROUNDS.U-kexpPending-SIMON_128_128_KEY_WORDS.U)%62.U)) ^ 3.U
 
   switch(kexpState) {
     is (kexpIdle) {
       when (io.kValid) {
-        kexpMode := io.mode
+        if (enable128_128 == false) {
+          kexpMode := false.B
+        } else {
+          kexpMode := io.mode
+        }
         kexpState := kexpExp1
-        when (!io.mode) {
+        when (!io.mode || !enable128_128.B) {
           xKey(0) := Cat(0.U(32.W), io.key(31, 0))
           xKey(1) := Cat(0.U(32.W), io.key(63, 32))
           xKey(2) := Cat(0.U(32.W), io.key(95, 64))
@@ -92,10 +100,12 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
           kexpPending := SIMON_64_128_ROUNDS.U - SIMON_64_128_KEY_WORDS.U
           rr3_64in := io.key(127, 96)
         }.otherwise {
-          xKey(0) := io.key(63, 0)
-          xKey(1) := io.key(127, 64)
-          kexpPending := SIMON_128_128_ROUNDS.U - SIMON_128_128_KEY_WORDS.U
-          rr3_128in := io.key(127, 64)
+          // if (enable128_128) {
+          //   xKey(0) := io.key(63, 0)
+          //   xKey(1) := io.key(127, 64)
+          //   kexpPending := SIMON_128_128_ROUNDS.U - SIMON_128_128_KEY_WORDS.U
+          //   rr3_128in := io.key(127, 64)
+          // }
         }
       }
     }
@@ -107,7 +117,9 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
         when (!kexpMode) {
           rr1_64in := rr3_64out ^ xKey(SIMON_64_128_ROUNDS.U-kexpPending-3.U)(31, 0)
         }.otherwise {
-          rr1_128in := rr3_128out ^ xKey(SIMON_128_128_ROUNDS.U-kexpPending-3.U)
+          // if (enable128_128) {
+          //   rr1_128in := rr3_128out ^ xKey(SIMON_128_128_ROUNDS.U-kexpPending-3.U)
+          // }
         }
       }
     }
@@ -118,8 +130,10 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
         xKey(SIMON_64_128_ROUNDS.U-kexpPending) := xKey64Value
         rr3_64in := xKey64Value(31, 0)
       }.otherwise {
-        xKey(SIMON_128_128_ROUNDS.U-kexpPending) := xKey128Value
-        rr3_128in := xKey128Value
+        // if (enable128_128) {
+        //   xKey(SIMON_128_128_ROUNDS.U-kexpPending) := xKey128Value
+        //   rr3_128in := xKey128Value
+        // }
       }
     }
     is (kexpDone) {
@@ -131,5 +145,5 @@ class SimonKeyExpander(maxRounds: Int, maxWordWidth: Int, keyWidth: Int) extends
 }
 
 object SimonKeyExpanderDriver extends App {
-  chisel3.Driver.execute(args, () => new SimonKeyExpander(68, 64, 128))
+  chisel3.Driver.execute(args, () => new SimonKeyExpander(68, 64, 128, true))
 }

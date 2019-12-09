@@ -10,7 +10,7 @@ import freechips.rocketchip.regmapper.{HasRegMap, RegField}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.UIntIsOneOf
 
-case class SimonParams(address: BigInt, beatBytes: Int)
+case class SimonParams(address: BigInt, beatBytes: Int, regSize: Int = 64)
 
 trait SimonBundle extends Bundle {
 }
@@ -39,7 +39,7 @@ trait SimonModule extends HasRegMap {
   val kExpStart = RegInit(false.B)
   val wroteData1 = RegInit(false.B)
 
-  val core = Module(new SimonCore(64, 128))
+  val core = Module(new SimonCore(64, 128, false))
   core.io.keyH := regKeyH
   core.io.keyL := regKeyL
   core.io.data1In := regData1
@@ -50,8 +50,8 @@ trait SimonModule extends HasRegMap {
   core.io.kValid := kExpStart
   core.io.dInValid := dataValid
 
-  val regRSconf = Wire(UInt(64.W))
-  regRSconf := Cat(0.U((64-5).W), core.io.dInReady, core.io.kExpDone, regWSconf(2, 0))
+  val regRSconf = Wire(UInt(params.regSize.W))
+  regRSconf := Cat(0.U((params.regSize-5).W), core.io.dInReady, core.io.kExpDone, regWSconf(2, 0))
 
   // self-clearing bit?
   when (dataValid) {
@@ -127,14 +127,119 @@ trait SimonModule extends HasRegMap {
     true.B
   }
 
-  regmap(
-    0x00 -> Seq(RegField(64, readSConf(_), writeSConf(_,_))),
-    0x08 -> Seq(RegField(64, readKey(_), writeKeyL(_,_))),
-    0x10 -> Seq(RegField(64, readKey(_), writeKeyH(_,_))),
-    0x18 -> Seq(RegField(64, readData1(_), writeData1(_,_))),
-    0x20 -> Seq(RegField(64, readData2(_), writeData2(_,_))),
-    0x28 -> Seq(RegField(64, readID(_), ignoreWrite(_,_)))
-  )
+  if (params.regSize == 64) {
+    regmap(
+      0x00 -> Seq(RegField(64, readSConf(_), writeSConf(_,_))),
+      0x08 -> Seq(RegField(64, readKey(_), writeKeyL(_,_))),
+      0x10 -> Seq(RegField(64, readKey(_), writeKeyH(_,_))),
+      0x18 -> Seq(RegField(64, readData1(_), writeData1(_,_))),
+      0x20 -> Seq(RegField(64, readData2(_), writeData2(_,_))),
+      0x28 -> Seq(RegField(64, readID(_), ignoreWrite(_,_)))
+    )
+  } else {
+    if (params.regSize == 32) {
+
+      def readData1L(ready: Bool): (Bool, UInt) = {
+        (true.B, core.io.data1Out(31, 0))
+      }
+
+      def readData1H(ready: Bool): (Bool, UInt) = {
+        (true.B, core.io.data1Out(63, 32))
+      }
+
+      def readData2L(ready: Bool): (Bool, UInt) = {
+        (true.B, core.io.data2Out(31, 0))
+      }
+
+      def readData2H(ready: Bool): (Bool, UInt) = {
+        (true.B, core.io.data2Out(63, 32))
+      }
+
+      def readIDL(ready: Bool): (Bool, UInt) = {
+        (true.B, SIMON_ID_1.U(32.W))
+      }
+
+      def readIDH(ready: Bool): (Bool, UInt) = {
+        (true.B, SIMON_ID_2.U(32.W))
+      }
+
+      def writeKeyHL(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.kReady) {
+          regKeyH := Cat(regKeyH(63, 32), bits)
+        }
+        true.B
+      }
+
+      def writeKeyHH(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.kReady) {
+          regKeyH := Cat(bits, regKeyH(31, 0))
+          kExpStart := true.B
+        }
+        true.B
+      }
+
+      def writeKeyLL(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.kReady) { regKeyL := Cat(regKeyL(63, 32), bits)  }
+        true.B
+      }
+
+      def writeKeyLH(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.kReady) { regKeyL := Cat(bits, regKeyL(31, 0))  }
+        true.B
+      }
+
+      def writeData1L(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.dInReady) {
+          regData1 := Cat(regData1(63, 32), bits)
+        }
+        true.B
+      }
+
+      def writeData1H(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.dInReady) {
+          regData1 := Cat(bits, regData1(31, 0))
+          wroteData1 := true.B
+        }
+        true.B
+      }
+
+      def writeData2L(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.dInReady) {
+          // update data register 1 value when re-starting
+          regData2 := Cat(regData2(63, 32), bits)
+        }
+        true.B
+      }
+
+      def writeData2H(valid: Bool, bits: UInt): Bool = {
+        when (valid && core.io.dInReady) {
+          // update data register 1 value when re-starting
+          when (!wroteData1) {
+            regData1 := core.io.data1Out
+          }.otherwise {
+            wroteData1 := false.B
+          }
+          regData2 := Cat(bits, regData2(31, 0))
+          dataValid := true.B
+        }
+        true.B
+      }
+
+      regmap(
+        0x00 -> Seq(RegField(32, readSConf(_), writeSConf(_,_))),
+        0x04 -> Seq(RegField(32, readKey(_), writeKeyLL(_,_))),
+        0x08 -> Seq(RegField(32, readKey(_), writeKeyLH(_,_))),
+        0x10 -> Seq(RegField(32, readKey(_), writeKeyHL(_,_))),
+        0x14 -> Seq(RegField(32, readKey(_), writeKeyHH(_,_))),
+        0x18 -> Seq(RegField(32, readData1L(_), writeData1L(_,_))),
+        0x20 -> Seq(RegField(32, readData1H(_), writeData1H(_,_))),
+        0x24 -> Seq(RegField(32, readData2L(_), writeData2L(_,_))),
+        0x28 -> Seq(RegField(32, readData2H(_), writeData2H(_,_))),
+        0x30 -> Seq(RegField(32, readIDL(_), ignoreWrite(_,_))),
+        0x34 -> Seq(RegField(32, readIDH(_), ignoreWrite(_,_)))
+      )
+    }
+  }
 }
 
 class SimonTL(c: SimonParams)(implicit p: Parameters)
@@ -151,7 +256,7 @@ trait HasPeripherySimonTL { this: BaseSubsystem =>
   private val portName = "simon"
 
   val simon = LazyModule(new SimonTL(
-    SimonParams(address, pbus.beatBytes))(p))
+    SimonParams(address, pbus.beatBytes, 32))(p))
 
   pbus.toVariableWidthSlave(Some(portName)) { simon.node }
 }

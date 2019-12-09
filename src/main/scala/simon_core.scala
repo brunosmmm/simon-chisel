@@ -3,7 +3,7 @@ package SimonAcc
 import chisel3._
 import chisel3.util._
 
-class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
+class SimonCore(registerWidth: Int, keyWidth: Int, enable128_128: Boolean = false) extends Module {
   val io = IO(
     new Bundle {
       val keyL = Input(UInt(registerWidth.W))
@@ -50,7 +50,8 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   val dataReg2 = RegInit(0.U(registerWidth.W))
 
   // key expander
-  val kExp = Module(new SimonKeyExpander(SIMON_128_128_ROUNDS, registerWidth, keyWidth))
+  val kExp = if (enable128_128) Module(new SimonKeyExpander(SIMON_128_128_ROUNDS, registerWidth, keyWidth, true)) else
+                                                                                                                    Module(new SimonKeyExpander(SIMON_64_128_ROUNDS, registerWidth, keyWidth, false))
 
   // round computer
   val sRound = Module(new SimonRound(64))
@@ -59,8 +60,8 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
   val kExpDone = RegInit(false.B)
   val rBusy = RegInit(false.B)
   val rStart = RegInit(false.B)
-  val pendingRounds = RegInit(0.U(68.W))
-  val roundCounter = RegInit(0.U(68.W))
+  val pendingRounds = RegInit(0.U(8.W))
+  val roundCounter = RegInit(0.U(8.W))
   val roundKey = Wire(UInt(64.W))
   val roundIValid = RegInit(false.B)
   val expKValid = RegInit(false.B)
@@ -99,7 +100,11 @@ class SimonCore(registerWidth: Int, keyWidth: Int) extends Module {
     kExpDone := false.B
     keyRegH := io.keyH
     keyRegL := io.keyL
-    sconfMode := io.sMode
+    if (enable128_128 == false) {
+      sconfMode := false.B
+    } else {
+      sconfMode := io.sMode
+    }
   }.otherwise {
     when (expKValid && kExp.io.expValid) {
       // key expansion finished,
